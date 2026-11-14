@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,37 +9,44 @@
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,sans-serif;background:#f7f7f7;color:#171717}
-header{background:#101010;color:white;padding:22px 5%;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+header{background:#101010;color:white;padding:20px 5%;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
 .logo{font-size:22px;font-weight:bold}
 .logo span,.hero h1 span{color:#e0ae45}
-nav a{color:white;text-decoration:none;margin-left:14px}
-.hero{background:linear-gradient(120deg,#171717,#34302a);color:white;text-align:center;padding:65px 18px}
+nav a{color:white;text-decoration:none;margin:8px}
+.hero{background:linear-gradient(120deg,#171717,#34302a);color:white;text-align:center;padding:60px 18px}
 .hero h1{font-size:clamp(30px,6vw,46px)}
 .hero p{color:#ddd}
 .search{background:white;padding:14px;border-radius:12px;max-width:850px;margin:25px auto 0;display:grid;grid-template-columns:1fr 1fr auto;gap:10px}
-input,select,button{padding:14px;border-radius:7px;border:1px solid #ddd;font-size:15px;width:100%}
+input,select,button{padding:13px;border-radius:7px;border:1px solid #ddd;font-size:15px;width:100%;margin-top:8px}
 button{background:#d9a441;border:0;font-weight:bold;cursor:pointer}
-.section{padding:40px 5%}
-.muted{color:#777;margin-bottom:22px}
+.section{padding:35px 5%}
+.muted{color:#777;margin:10px 0 20px}
+.account-box{background:white;max-width:500px;padding:22px;border-radius:12px;box-shadow:0 2px 12px #00000010}
+.account-box h3{margin:12px 0}
+.account-box button{margin-top:12px}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}
 .card{background:white;border-radius:12px;overflow:hidden;border:1px solid #eee}
 .photo{height:140px;background:#e8e3d9;display:grid;place-items:center;font-size:45px}
-.details{padding:17px}
+.details{padding:17px;line-height:1.7}
 .price{color:#a87819;font-weight:bold}
-.tag{background:#eee;padding:5px 8px;border-radius:5px;font-size:12px}
-.notice,.empty{background:white;padding:22px;border-radius:10px;text-align:center;grid-column:1/-1}
-.notice{background:#fff4d9;border-left:4px solid #d9a441;text-align:left}
-.actions{display:flex;gap:10px;margin-top:15px}
-.actions a{flex:1;text-align:center;background:#d9a441;color:#111;padding:11px 5px;text-decoration:none;border-radius:6px;font-size:13px;font-weight:bold}
-footer{background:#101010;color:#ccc;text-align:center;padding:30px}
-@media(max-width:600px){.search{grid-template-columns:1fr}header{justify-content:center}}
+.notice{background:#fff4d9;border-left:4px solid #d9a441;padding:20px;border-radius:10px;margin:12px 0}
+.actions{margin-top:12px}
+.actions a{display:block;text-align:center;background:#d9a441;color:#111;padding:11px;text-decoration:none;border-radius:6px;font-weight:bold}
+footer{background:#101010;color:#ccc;text-align:center;padding:30px;line-height:1.8}
+.hidden{display:none!important}
+hr{margin:22px 0;border:0;border-top:1px solid #eee}
+@media(max-width:600px){.search{grid-template-columns:1fr}header{justify-content:center}nav{text-align:center}}
 </style>
 </head>
 <body>
 
 <header>
 <div class="logo">RENTLINK <span>GHANA</span></div>
-<nav><a href="#homes">Find a House</a><a href="#about">About</a></nav>
+<nav>
+<a href="#homes">Find a House</a>
+<a href="#account">My Account</a>
+<a href="#about">About</a>
+</nav>
 </header>
 
 <section class="hero">
@@ -61,10 +69,49 @@ footer{background:#101010;color:#ccc;text-align:center;padding:30px}
 </div>
 </section>
 
+<section class="section" id="account">
+<h2>My RENTLINK Account</h2>
+<p class="muted">Join RENTLINK GHANA. Create an account or log in.</p>
+
+<div class="account-box">
+
+<div id="registerArea">
+<h3>Create Your Account</h3>
+<input id="fullName" placeholder="Full name">
+<input id="phone" type="tel" placeholder="Phone number">
+<input id="email" type="email" placeholder="Email address">
+<input id="password" type="password" placeholder="Password (minimum 6 characters)">
+<select id="role">
+<option value="tenant">I am a Tenant</option>
+<option value="landlord">I am a Landlord</option>
+<option value="agent">I am a Property Agent</option>
+</select>
+<button id="registerBtn">Create Account</button>
+</div>
+
+<hr>
+
+<div id="loginArea">
+<h3>Already have an account?</h3>
+<input id="loginEmail" type="email" placeholder="Email address">
+<input id="loginPassword" type="password" placeholder="Password">
+<button id="loginBtn">Log In</button>
+</div>
+
+<div id="userArea" class="hidden">
+<h3>Welcome to RENTLINK GHANA!</h3>
+<p id="userInfo"></p>
+<button id="logoutBtn" style="background:#333;color:white">Log Out</button>
+</div>
+
+<p id="authMessage" role="status" aria-live="polite" style="margin-top:15px"></p>
+</div>
+</section>
+
 <section class="section" id="homes">
 <h2>Available Properties</h2>
 <p class="muted">Discover houses and apartments across Ghana.</p>
-<div id="message" class="notice">Connecting to RENTLINK GHANA property database...</div>
+<div id="message" class="notice">Loading available properties...</div>
 <div class="cards" id="propertyCards"></div>
 </section>
 
@@ -80,74 +127,184 @@ FIND A HOUSE. CONNECT. RENT.<br>
 </footer>
 
 <script>
-const SUPABASE_URL = "https://gloeodrutneogyslyxpn.supabase.co";
-const SUPABASE_KEY = "sb_publishable_KpbH6SIOkTThq1BiQ8EobA_XdMwa7ru";
+const SUPABASE_URL="https://gloeodrutneogyslyxpn.supabase.co";
+const SUPABASE_KEY="sb_publishable_KpbH6SIOkTThq1BiQ8EobA_XdMwa7ru";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const authMessage=document.getElementById("authMessage");
 
-const cards = document.getElementById("propertyCards");
-const message = document.getElementById("message");
-
-function safe(value) {
-  return String(value ?? "").replace(/[&<>"']/g, char => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  })[char]);
+function say(message){
+  authMessage.textContent=message;
 }
 
-async function loadProperties() {
-  message.textContent = "Loading available houses...";
-  cards.innerHTML = "";
+function updateAccount(user){
+  document.getElementById("registerArea").classList.toggle("hidden",!!user);
+  document.getElementById("loginArea").classList.toggle("hidden",!!user);
+  document.getElementById("userArea").classList.toggle("hidden",!user);
 
-  let query = db.from("properties")
+  if(user){
+    document.getElementById("userInfo").textContent="Signed in as "+user.email;
+  }
+}
+
+async function register(){
+  const name=document.getElementById("fullName").value.trim();
+  const phone=document.getElementById("phone").value.trim();
+  const email=document.getElementById("email").value.trim();
+  const password=document.getElementById("password").value;
+  const role=document.getElementById("role").value;
+
+  if(!name||!phone||!email||!password){
+    say("Please complete all fields.");
+    return;
+  }
+
+  if(password.length<6){
+    say("Password must contain at least 6 characters.");
+    return;
+  }
+
+  say("Creating your account. Please wait...");
+
+  const {data,error}=await db.auth.signUp({
+    email:email,
+    password:password,
+    options:{
+      data:{
+        full_name:name,
+        phone:phone,
+        role:role
+      }
+    }
+  });
+
+  if(error){
+    say(error.message);
+    return;
+  }
+
+  if(data.session){
+    updateAccount(data.user);
+    say("Account created successfully. Welcome!");
+  }else{
+    say("Registration successful! Check your email and confirm your account before logging in.");
+  }
+}
+
+async function login(){
+  const email=document.getElementById("loginEmail").value.trim();
+  const password=document.getElementById("loginPassword").value;
+
+  if(!email||!password){
+    say("Enter your email and password.");
+    return;
+  }
+
+  say("Logging in...");
+
+  const {data,error}=await db.auth.signInWithPassword({
+    email:email,
+    password:password
+  });
+
+  if(error){
+    say(error.message);
+    return;
+  }
+
+  updateAccount(data.user);
+  say("Welcome back!");
+}
+
+async function logout(){
+  const {error}=await db.auth.signOut();
+
+  if(error){
+    say(error.message);
+    return;
+  }
+
+  updateAccount(null);
+  say("You have logged out.");
+}
+
+document.getElementById("registerBtn").addEventListener("click",register);
+document.getElementById("loginBtn").addEventListener("click",login);
+document.getElementById("logoutBtn").addEventListener("click",logout);
+
+db.auth.onAuthStateChange((event,session)=>{
+  updateAccount(session?.user||null);
+});
+
+async function checkSession(){
+  const {data,error}=await db.auth.getSession();
+  if(!error) updateAccount(data.session?.user||null);
+}
+
+function safe(value){
+  return String(value??"").replace(/[&<>"']/g,c=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  })[c]);
+}
+
+async function loadProperties(){
+  const message=document.getElementById("message");
+  const cards=document.getElementById("propertyCards");
+
+  message.textContent="Loading available houses...";
+  cards.innerHTML="";
+
+  let query=db.from("properties")
     .select("id,title,description,region,town,area,property_type,bedrooms,bathrooms,rent_amount,rent_period,advance_months,contact_phone")
     .eq("status","approved")
     .order("created_at",{ascending:false})
     .limit(30);
 
-  const region = document.getElementById("region").value;
-  const town = document.getElementById("town").value.trim();
+  const region=document.getElementById("region").value;
+  const town=document.getElementById("town").value.trim();
 
-  if(region) query = query.eq("region",region);
-  if(town) query = query.ilike("town","%" + town + "%");
+  if(region) query=query.eq("region",region);
+  if(town) query=query.ilike("town","%"+town+"%");
 
-  const {data,error} = await query;
+  const {data,error}=await query;
 
-  if(error) {
-    message.textContent = "We could not load properties. Please try again later.";
+  if(error){
+    message.textContent="Could not load properties. Please try again later.";
     console.error(error);
     return;
   }
 
-  if(!data || data.length === 0) {
-    message.textContent = "No approved properties found yet. Please check again soon.";
+  if(!data||data.length===0){
+    message.textContent="No approved properties found yet. Please check again soon.";
     return;
   }
 
-  message.textContent = data.length + " available property listing(s) found.";
+  message.textContent=data.length+" available properties found.";
 
-  data.forEach(property => {
-    const phone = String(property.contact_phone || "").replace(/\D/g,"");
-    const whatsapp = phone ? "https://wa.me/" + phone : "";
+  data.forEach(p=>{
+    const rawPhone=String(p.contact_phone||"").replace(/\D/g,"");
+    const waPhone=rawPhone.startsWith("0")?"233"+rawPhone.slice(1):rawPhone;
 
-    const card = document.createElement("article");
-    card.className = "card";
-    card.innerHTML = `
+    const card=document.createElement("article");
+    card.className="card";
+    card.innerHTML=`
       <div class="photo">🏠</div>
       <div class="details">
-        <h3>${safe(property.title)}</h3>
-        <p>${safe(property.area || property.town)}, ${safe(property.region)}</p>
-        <p class="price">GH₵ ${safe(Number(property.rent_amount).toLocaleString())} / ${safe(property.rent_period)}</p>
-        <p>${safe(property.property_type || "Property")}</p>
-        <p>${safe(property.bedrooms)} bedrooms · ${safe(property.bathrooms)} bathrooms</p>
-        <p>${safe(property.advance_months)} months advance</p>
-        <p>${safe(property.description || "")}</p>
-        ${whatsapp ? `<div class="actions"><a href="${whatsapp}" target="_blank" rel="noopener noreferrer">Contact on WhatsApp</a></div>` : ""}
+        <h3>${safe(p.title)}</h3>
+        <p>${safe(p.area||p.town)}, ${safe(p.region)}</p>
+        <p class="price">GH₵ ${safe(Number(p.rent_amount).toLocaleString())} / ${safe(p.rent_period)}</p>
+        <p>${safe(p.property_type||"Property")}</p>
+        <p>${safe(p.bedrooms)} bedrooms · ${safe(p.bathrooms)} bathrooms</p>
+        <p>${safe(p.advance_months)} months advance</p>
+        <p>${safe(p.description||"")}</p>
+        ${waPhone?`<div class="actions"><a href="https://wa.me/${safe(waPhone)}" target="_blank" rel="noopener noreferrer">Contact on WhatsApp</a></div>`:""}
       </div>`;
     cards.appendChild(card);
   });
 }
 
 document.getElementById("searchBtn").addEventListener("click",loadProperties);
+checkSession();
 loadProperties();
 </script>
 </body>
