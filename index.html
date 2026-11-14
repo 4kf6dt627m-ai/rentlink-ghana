@@ -1,0 +1,217 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101010">
+  <title>RENTLINK GHANA | Find Your Next Home</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f7f7;
+      color: #171717;
+    }
+    header {
+      background: #101010;
+      color: white;
+      padding: 20px 5%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .logo { font-size: 21px; font-weight: 800; }
+    .logo span { color: #d9a441; }
+    header a { color: white; text-decoration: none; margin-left: 14px; }
+    .hero {
+      background: linear-gradient(120deg, #171717, #34302a);
+      color: white;
+      text-align: center;
+      padding: 65px 18px;
+    }
+    .hero h1 { font-size: clamp(30px, 6vw, 48px); margin-bottom: 14px; }
+    .hero h1 span { color: #e2b451; }
+    .hero p { color: #ddd; margin-bottom: 25px; }
+    .search {
+      background: white;
+      max-width: 850px;
+      margin: auto;
+      padding: 14px;
+      border-radius: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 10px;
+    }
+    input, select, button {
+      padding: 14px;
+      border-radius: 7px;
+      border: 1px solid #ddd;
+      font-size: 15px;
+      width: 100%;
+    }
+    button {
+      background: #d9a441;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .section { padding: 40px 5%; }
+    .section h2 { margin-bottom: 8px; }
+    .muted { color: #777; margin-bottom: 22px; }
+    .notice {
+      background: #fff4d9;
+      border-left: 4px solid #d9a441;
+      padding: 13px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 18px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #eee;
+    }
+    .photo {
+      height: 150px;
+      background: #e8e3d9;
+      display: grid;
+      place-items: center;
+      color: #655b4a;
+      font-size: 42px;
+    }
+    .details { padding: 17px; }
+    .details h3 { margin-bottom: 9px; }
+    .price { color: #a87819; font-weight: bold; margin: 10px 0; }
+    .tag {
+      display: inline-block;
+      background: #eee;
+      padding: 5px 8px;
+      border-radius: 5px;
+      font-size: 12px;
+    }
+    .empty {
+      background: white;
+      border: 1px dashed #bbb;
+      padding: 25px;
+      text-align: center;
+      border-radius: 10px;
+      color: #666;
+      grid-column: 1 / -1;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .actions a {
+      flex: 1;
+      text-align: center;
+      text-decoration: none;
+      color: #111;
+      background: #d9a441;
+      padding: 11px 5px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    footer {
+      background: #101010;
+      color: #ccc;
+      padding: 30px 5%;
+      text-align: center;
+      line-height: 1.8;
+    }
+    @media(max-width: 600px) {
+      .search { grid-template-columns: 1fr; }
+      header { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">RENTLINK <span>GHANA</span></div>
+  <nav>
+    <a href="#homes">Find a House</a>
+    <a href="#about">About</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <h1>Find Your <span>Next Home.</span></h1>
+  <p>Connecting tenants, landlords and property agents across Ghana.</p>
+
+  <div class="search">
+    <select id="region">
+      <option value="">All regions</option>
+      <option>Greater Accra</option>
+      <option>Ashanti</option>
+      <option>Eastern</option>
+      <option>Central</option>
+      <option>Western</option>
+      <option>Western North</option>
+      <option>Volta</option>
+      <option>Oti</option>
+      <option>Upper East</option>
+      <option>Upper West</option>
+      <option>Northern</option>
+      <option>Savannah</option>
+      <option>North East</option>
+      <option>Bono</option>
+      <option>Bono East</option>
+      <option>Ahafo</option>
+    </select>
+    <input id="town" placeholder="Enter town or area">
+    <button onclick="searchHomes()">Search Houses</button>
+  </div>
+</section>
+
+<section class="section" id="homes">
+  <h2>Available Properties</h2>
+  <p class="muted">Discover houses and apartments across Ghana.</p>
+  <div class="notice">
+    Welcome to RENTLINK GHANA. Real property listings will appear here after we connect the database.
+  </div>
+  <div class="cards" id="propertyCards">
+    <div class="empty">
+      <h3>Your next home starts here.</h3>
+      <p>Property listings are coming soon.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="about">
+  <h2>About RENTLINK GHANA</h2>
+  <p class="muted">
+    Our mission is to make finding rental properties across Ghana easier
+    by connecting tenants with landlords and property agents.
+  </p>
+</section>
+
+<footer>
+  <strong>RENTLINK GHANA</strong><br>
+  FIND A HOUSE. CONNECT. RENT.<br>
+  <small>© 2026 RENTLINK GHANA. All rights reserved.</small>
+</footer>
+
+<script>
+function searchHomes() {
+  const region = document.getElementById("region").value;
+  const town = document.getElementById("town").value.trim();
+  alert("RENTLINK GHANA search is being prepared. Region: " +
+    (region || "All regions") + ". Area: " + (town || "Any area") +
+    ". Property database connection is coming next.");
+}
+</script>
+
+</body>
+</html>
