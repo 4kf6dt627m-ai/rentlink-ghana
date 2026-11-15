@@ -56,6 +56,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .detail-description{line-height:1.7;white-space:pre-wrap}
 .detail-contact{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
 .detail-contact a{text-decoration:none}
+.enquiry-box{background:#f4f7fa;padding:18px;border-radius:10px;margin-top:25px}
 footer{text-align:center;background:var(--dark);color:white;padding:25px;margin-top:40px}
 @media(max-width:600px){
 .hero h1{font-size:28px}
@@ -110,7 +111,6 @@ nav{justify-content:center}
   <div id="propertyList" class="property-grid"></div>
 </section>
 
-<!-- NEW PROPERTY DETAILS PAGE -->
 <section id="propertyDetails" class="panel hidden">
   <button class="primary" onclick="showSection('browse')">← Back to Properties</button>
   <div id="detailContent"></div>
@@ -323,10 +323,72 @@ function showPropertyDetails(property) {
     '<h3>About this property</h3>' +
     '<p class="detail-description">' + safe(property.description || "No description provided.") + '</p>' +
     '<h3>Interested in this property?</h3>' +
-    '<p>Contact the landlord directly to ask questions or arrange a viewing.</p>' +
-    '<div class="detail-contact">' + whatsappButton + phoneButton + '</div>';
+    '<p>Contact the landlord directly or send a viewing request below.</p>' +
+    '<div class="detail-contact">' + whatsappButton + phoneButton + '</div>' +
+
+    '<div class="enquiry-box">' +
+      '<h3>Request a Viewing</h3>' +
+      '<p class="small">Send your details to the landlord. You must be logged in to submit an enquiry.</p>' +
+      '<label>Your full name</label>' +
+      '<input id="enquiryName" placeholder="Enter your full name" value="' + safe(currentProfile?.full_name || currentUser?.user_metadata?.full_name || "") + '">' +
+      '<label>Your phone number</label>' +
+      '<input id="enquiryPhone" type="tel" placeholder="Enter your phone number">' +
+      '<label>Your message</label>' +
+      '<textarea id="enquiryMessage" placeholder="Hello, I am interested in this property. I would like to arrange a viewing."></textarea>' +
+      '<button id="enquirySubmitButton" class="gold" onclick="submitEnquiry(\'' + safe(property.id) + '\')">Send Viewing Request</button>' +
+      '<div id="enquiryStatus" class="status hidden"></div>' +
+    '</div>';
 
   showSection("propertyDetails");
+}
+
+async function submitEnquiry(propertyId) {
+  if (!currentUser) {
+    alert("Please log in before sending a viewing request.");
+    showSection("account");
+    return;
+  }
+
+  const tenantName = document.getElementById("enquiryName").value.trim();
+  const tenantPhone = document.getElementById("enquiryPhone").value.trim();
+  const enquiryMessage = document.getElementById("enquiryMessage").value.trim();
+  const statusBox = document.getElementById("enquiryStatus");
+  const submitButton = document.getElementById("enquirySubmitButton");
+
+  if (!tenantName || !tenantPhone || !enquiryMessage) {
+    alert("Please enter your name, phone number and message.");
+    return;
+  }
+
+  if (tenantPhone.length < 7) {
+    alert("Please enter a valid phone number.");
+    return;
+  }
+
+  submitButton.disabled = true;
+  submitButton.textContent = "Sending...";
+  statusBox.classList.remove("hidden");
+  statusBox.textContent = "Sending your viewing request...";
+
+  try {
+    const {error} = await db.from("property_enquiries").insert({
+      property_id:propertyId,
+      tenant_id:currentUser.id,
+      tenant_name:tenantName,
+      tenant_phone:tenantPhone,
+      message:enquiryMessage
+    });
+
+    if (error) throw error;
+
+    statusBox.textContent = "Your viewing request has been sent successfully! The landlord can now see your enquiry.";
+    document.getElementById("enquiryMessage").value = "";
+    submitButton.textContent = "Request Sent";
+  } catch(error) {
+    statusBox.textContent = "Could not send your request: " + error.message;
+    submitButton.disabled = false;
+    submitButton.textContent = "Send Viewing Request";
+  }
 }
 
 async function registerAccount() {
