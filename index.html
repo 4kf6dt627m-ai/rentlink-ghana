@@ -4,8 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RAYMOND HOMES | Find Your Home in Ghana</title>
-<meta name="description" content="Find houses and apartments for rent across Ghana with RAYMOND HOMES.">
+<title>RAYMOND HOMES | Ghana Property Rentals</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--dark:#10243a;--blue:#174d78;--gold:#e9ad35;--light:#f4f7fa;--white:#fff;--red:#c43d3d;--green:#16834b}
@@ -13,9 +12,9 @@
 body{margin:0;font-family:Arial,sans-serif;background:var(--light);color:#202b36}
 header{background:var(--dark);color:white;padding:17px 5%;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .logo{font-size:23px;font-weight:900;letter-spacing:1px}
-.logo span{color:var(--gold)}
-nav{display:flex;gap:8px;flex-wrap:wrap}
-nav button{background:transparent;color:white;border:1px solid #71869a;padding:9px 12px;border-radius:7px;cursor:pointer}
+.logo span,footer span{color:var(--gold)}
+nav{display:flex;gap:7px;flex-wrap:wrap}
+nav button{background:transparent;color:white;border:1px solid #71869a;padding:9px 11px;border-radius:7px;cursor:pointer}
 nav button:hover{background:var(--blue)}
 .hero{background:linear-gradient(120deg,#10243a,#24618c);color:white;padding:55px 7%;text-align:center}
 .hero h1{font-size:36px;margin:0 0 12px}
@@ -42,10 +41,17 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .price{font-size:20px;font-weight:bold;color:var(--blue)}
 .admin-card{border:1px solid #dce3e9;border-radius:9px;padding:15px;margin:12px 0;background:#fff}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-footer{text-align:center;background:var(--dark);color:white;padding:25px;margin-top:40px}
-footer span{color:var(--gold)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:15px 0}
+.stat{background:#edf2f7;border-radius:9px;padding:15px;text-align:center}
+.stat strong{display:block;font-size:26px;color:var(--dark)}
+.stat span{font-size:13px;color:#687785}
+.status-badge{display:inline-block;padding:6px 10px;border-radius:20px;font-size:12px;font-weight:bold}
+.pending{background:#fff2d7;color:#8a5b00}
+.approved{background:#dff5e8;color:#116b3c}
+.rejected{background:#fbe4e4;color:#a32121}
 label{font-weight:bold;font-size:14px}
-@media(max-width:600px){.hero h1{font-size:28px}header{justify-content:center;text-align:center}nav{justify-content:center}}
+footer{text-align:center;background:var(--dark);color:white;padding:25px;margin-top:40px}
+@media(max-width:600px){.hero h1{font-size:28px}header{justify-content:center;text-align:center}nav{justify-content:center}.stats{gap:6px}.stat{padding:10px 4px}}
 </style>
 </head>
 <body>
@@ -55,6 +61,7 @@ label{font-weight:bold;font-size:14px}
   <nav>
     <button onclick="showSection('browse')">Find a House</button>
     <button onclick="showSection('account')">My Account</button>
+    <button id="myPropertiesNav" class="hidden" onclick="showSection('landlord')">My Properties</button>
     <button onclick="showSection('upload')">Upload Property</button>
     <button id="adminNav" class="hidden" onclick="showSection('admin')">Admin Dashboard</button>
   </nav>
@@ -127,6 +134,26 @@ label{font-weight:bold;font-size:14px}
   <button id="logoutButton" class="danger hidden" onclick="logoutAccount()">Log Out</button>
 </section>
 
+<section id="landlord" class="panel hidden">
+  <h2>My Properties Dashboard</h2>
+  <p class="small">Manage and monitor properties submitted through your account.</p>
+
+  <div class="stats">
+    <div class="stat"><strong id="totalCount">0</strong><span>Total listings</span></div>
+    <div class="stat"><strong id="approvedCount">0</strong><span>Approved</span></div>
+    <div class="stat"><strong id="pendingCount">0</strong><span>Pending</span></div>
+  </div>
+
+  <div class="stat" style="margin-bottom:15px">
+    <strong id="rejectedCount">0</strong>
+    <span>Rejected listings</span>
+  </div>
+
+  <button class="primary" onclick="loadMyProperties()">Refresh My Properties</button>
+  <div id="landlordMessage" class="status">Loading your properties...</div>
+  <div id="myPropertyList"></div>
+</section>
+
 <section id="upload" class="panel hidden">
   <h2>Upload a Property</h2>
   <div id="uploadNotice" class="status">Please log in with a landlord or agent account.</div>
@@ -176,7 +203,7 @@ label{font-weight:bold;font-size:14px}
     <label>Advance required (months)</label>
     <input id="advanceMonth" type="number" min="0" placeholder="Example: 12">
     <label>Contact phone / WhatsApp</label>
-    <input id="contactPhone" placeholder="Phone number with country code if possible">
+    <input id="contactPhone" placeholder="Phone number">
     <label>Property photograph</label>
     <input id="propertyImage" type="file" accept="image/*">
     <p class="small">Upload a property photo only. Do not upload identity documents or private information.</p>
@@ -202,33 +229,48 @@ label{font-weight:bold;font-size:14px}
 <script>
 const SUPABASE_URL = "https://gloeodrutneogyslyxpn.supabase.co";
 const SUPABASE_KEY = "sb_publishable_KpbH6SIOkTThq1BiQ8EobA_XdMwa7ru";
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 let currentUser = null;
 let currentProfile = null;
 let isAdmin = false;
 
 function showSection(sectionId) {
-  ["browse","account","upload","admin"].forEach(id => {
+  ["browse","account","upload","landlord","admin"].forEach(id => {
     document.getElementById(id).classList.add("hidden");
   });
+
   if (sectionId === "admin" && !isAdmin) {
     alert("Admin access is not available for this account.");
     return;
   }
+
+  if ((sectionId === "landlord" || sectionId === "upload") && !currentUser) {
+    alert("Please log in first.");
+    showSection("account");
+    return;
+  }
+
   document.getElementById(sectionId).classList.remove("hidden");
+
   if (sectionId === "browse") loadProperties();
+  if (sectionId === "landlord") loadMyProperties();
   if (sectionId === "admin") loadAdminProperties();
 }
 
-function message(id, text) {
+function message(id,text) {
   document.getElementById(id).textContent = text;
 }
 
 function safe(value) {
-  return String(value ?? "").replace(/[&<>"']/g, char => ({
+  return String(value ?? "").replace(/[&<>"']/g,char => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
   }[char]));
+}
+
+function statusBadge(status) {
+  const known = ["pending","approved","rejected"].includes(status) ? status : "pending";
+  return '<span class="status-badge ' + known + '">' + safe(known.toUpperCase()) + '</span>';
 }
 
 async function registerAccount() {
@@ -247,10 +289,9 @@ async function registerAccount() {
     return;
   }
 
-  const {data,error} = await db.auth.signUp({
-    email,
-    password,
-    options: {data:{full_name:fullName,phone,role}}
+  const {error} = await db.auth.signUp({
+    email,password,
+    options:{data:{full_name:fullName,phone,role}}
   });
 
   if (error) {
@@ -272,6 +313,7 @@ async function loginAccount() {
     alert(error.message);
     return;
   }
+
   currentUser = data.user;
   await refreshAccount();
   showSection("account");
@@ -283,6 +325,7 @@ async function logoutAccount() {
     alert(error.message);
     return;
   }
+
   currentUser = null;
   currentProfile = null;
   isAdmin = false;
@@ -304,8 +347,8 @@ async function refreshAccount() {
       .maybeSingle();
 
     currentProfile = profile || {
-      full_name: currentUser.user_metadata?.full_name || "",
-      role: currentUser.user_metadata?.role || "tenant"
+      full_name:currentUser.user_metadata?.full_name || "",
+      role:currentUser.user_metadata?.role || "tenant"
     };
 
     const {data:adminRecord,error:adminError} = await db.from("rentlink_admins")
@@ -325,6 +368,7 @@ function updateAccountUI() {
   document.getElementById("loginBox").classList.toggle("hidden",loggedIn);
   document.getElementById("logoutButton").classList.toggle("hidden",!loggedIn);
   document.getElementById("adminNav").classList.toggle("hidden",!isAdmin);
+  document.getElementById("myPropertiesNav").classList.toggle("hidden",!loggedIn);
 
   if (!loggedIn) {
     message("accountStatus","You are not logged in.");
@@ -336,9 +380,10 @@ function updateAccountUI() {
   const name = currentProfile?.full_name || currentUser.email;
   const role = currentProfile?.role || "tenant";
   message("accountStatus","Logged in as " + name + " (" + role + ")" + (isAdmin ? " — Admin access confirmed." : ""));
+
   const canUpload = role === "landlord" || role === "agent";
   document.getElementById("uploadForm").classList.toggle("hidden",!canUpload);
-  message("uploadNotice",canUpload ? "You can submit properties for admin approval." : "Your account is registered as a tenant. A landlord or agent account is required to upload properties.");
+  message("uploadNotice",canUpload ? "You can submit properties for admin approval." : "Your account is registered as a tenant. A landlord or agent account is required to upload new properties.");
 }
 
 async function submitProperty() {
@@ -371,14 +416,8 @@ async function submitProperty() {
     alert("Please complete the required fields and choose a property photo.");
     return;
   }
-
-  if (!file.type.startsWith("image/")) {
-    alert("Please select an image file.");
-    return;
-  }
-
-  if (file.size > 8 * 1024 * 1024) {
-    alert("The image must be smaller than 8 MB.");
+  if (!file.type.startsWith("image/") || file.size > 8 * 1024 * 1024) {
+    alert("Choose an image smaller than 8 MB.");
     return;
   }
 
@@ -390,34 +429,24 @@ async function submitProperty() {
     const extension = file.name.split(".").pop().toLowerCase();
     const imagePath = currentUser.id + "/" + crypto.randomUUID() + "." + extension;
 
-    const {error:uploadError} = await db.storage
-      .from("property-images")
+    const {error:uploadError} = await db.storage.from("property-images")
       .upload(imagePath,file,{contentType:file.type,upsert:false});
-
     if (uploadError) throw uploadError;
 
-    const {data:imageData} = db.storage
-      .from("property-images")
-      .getPublicUrl(imagePath);
+    const {data:imageData} = db.storage.from("property-images").getPublicUrl(imagePath);
 
     const property = {
-      owner_id:currentUser.id,
-      title,description,region,town,area,property_type,
-      bedrooms,bathrooms,rent_amount,rent_period,
-      advance_month,contact_phone,
-      image_url:imageData.publicUrl,
-      status:"pending"
+      owner_id:currentUser.id,title,description,region,town,area,
+      property_type,bedrooms,bathrooms,rent_amount,rent_period,
+      advance_month,contact_phone,image_url:imageData.publicUrl,status:"pending"
     };
 
     const {error:insertError} = await db.from("properties").insert(property);
     if (insertError) throw insertError;
 
     alert("Property submitted successfully. It will appear publicly after admin approval.");
-    document.getElementById("uploadForm").querySelectorAll("input,textarea").forEach(el => {
-      if (el.type === "file" || el.type !== "button") el.value = "";
-    });
-    document.getElementById("propertyDescription").value = "";
-  } catch (error) {
+    document.getElementById("uploadForm").querySelectorAll("input,textarea").forEach(el => el.value = "");
+  } catch(error) {
     alert("Property submission failed: " + error.message);
   } finally {
     submitButton.disabled = false;
@@ -430,10 +459,8 @@ async function loadProperties() {
   message("propertyMessage","Loading approved properties...");
   list.innerHTML = "";
 
-  let query = db.from("properties")
-    .select("*")
-    .eq("status","approved")
-    .order("created_at",{ascending:false});
+  let query = db.from("properties").select("*")
+    .eq("status","approved").order("created_at",{ascending:false});
 
   const region = document.getElementById("searchRegion").value;
   const town = document.getElementById("searchTown").value.trim();
@@ -442,7 +469,6 @@ async function loadProperties() {
   if (town) query = query.ilike("town","%" + town + "%");
 
   const {data,error} = await query;
-
   if (error) {
     message("propertyMessage","Could not load properties: " + error.message);
     return;
@@ -458,13 +484,10 @@ async function loadProperties() {
   data.forEach(property => {
     const card = document.createElement("article");
     card.className = "property-card";
-
     const image = property.image_url
       ? '<img src="' + safe(property.image_url) + '" alt="Property photograph">'
       : '<div style="height:190px;display:grid;place-items:center">No photo available</div>';
-
-    const phone = String(property.contact_phone || "").replace(/[^\d+]/g,"");
-    const whatsapp = phone.replace(/\D/g,"");
+    const whatsapp = String(property.contact_phone || "").replace(/\D/g,"");
 
     card.innerHTML = image +
       '<div class="property-info">' +
@@ -482,6 +505,65 @@ async function loadProperties() {
   });
 }
 
+async function loadMyProperties() {
+  if (!currentUser) {
+    message("landlordMessage","Please log in to see your properties.");
+    return;
+  }
+
+  const container = document.getElementById("myPropertyList");
+  container.innerHTML = "";
+  message("landlordMessage","Loading your properties...");
+
+  const {data,error} = await db.from("properties")
+    .select("*")
+    .eq("owner_id",currentUser.id)
+    .order("created_at",{ascending:false});
+
+  if (error) {
+    message("landlordMessage","Could not load your properties: " + error.message + ". Your Supabase database may need a policy allowing users to view their own submissions.");
+    return;
+  }
+
+  const properties = data || [];
+  const approved = properties.filter(p => p.status === "approved").length;
+  const pending = properties.filter(p => p.status === "pending").length;
+  const rejected = properties.filter(p => p.status === "rejected").length;
+
+  document.getElementById("totalCount").textContent = properties.length;
+  document.getElementById("approvedCount").textContent = approved;
+  document.getElementById("pendingCount").textContent = pending;
+  document.getElementById("rejectedCount").textContent = rejected;
+
+  if (properties.length === 0) {
+    message("landlordMessage","You have not submitted any properties with this account yet.");
+    return;
+  }
+
+  message("landlordMessage","You have " + properties.length + " property listing(s).");
+
+  properties.forEach(property => {
+    const card = document.createElement("div");
+    card.className = "admin-card";
+
+    const image = property.image_url
+      ? '<img src="' + safe(property.image_url) + '" alt="Property photograph" style="width:100%;max-width:280px;border-radius:8px">'
+      : "";
+
+    card.innerHTML =
+      '<h3>' + safe(property.title) + '</h3>' +
+      image +
+      '<p><strong>Location:</strong> ' + safe(property.town) + ', ' + safe(property.region) + '</p>' +
+      '<p><strong>Type:</strong> ' + safe(property.property_type) + '</p>' +
+      '<p><strong>Rent:</strong> GH₵' + Number(property.rent_amount).toLocaleString() + ' / ' + safe(property.rent_period) + '</p>' +
+      '<p><strong>Advance:</strong> ' + safe(property.advance_month) + ' month(s)</p>' +
+      '<p><strong>Listing status:</strong> ' + statusBadge(property.status) + '</p>' +
+      '<p class="small">Your listing is ' + (property.status === "approved" ? "visible to the public." : property.status === "pending" ? "waiting for admin review." : "not currently visible to the public.") + '</p>';
+
+    container.appendChild(card);
+  });
+}
+
 async function loadAdminProperties() {
   if (!isAdmin || !currentUser) {
     message("adminMessage","You do not have admin access.");
@@ -493,8 +575,7 @@ async function loadAdminProperties() {
   container.innerHTML = "";
 
   const {data,error} = await db.from("properties")
-    .select("*")
-    .order("created_at",{ascending:false});
+    .select("*").order("created_at",{ascending:false});
 
   if (error) {
     message("adminMessage","Could not load submissions: " + error.message);
@@ -507,12 +588,11 @@ async function loadAdminProperties() {
   }
 
   const pending = data.filter(p => p.status === "pending").length;
-  message("adminMessage",data.length + " total submission(s). " + pending + " awaiting approval.");
+  message("adminMessage",data.length + " total submissions. " + pending + " awaiting approval.");
 
   data.forEach(property => {
     const card = document.createElement("div");
     card.className = "admin-card";
-
     const image = property.image_url
       ? '<img src="' + safe(property.image_url) + '" alt="Property photograph" style="width:100%;max-width:300px;border-radius:8px">'
       : "";
@@ -521,10 +601,9 @@ async function loadAdminProperties() {
       '<h3>' + safe(property.title) + '</h3>' +
       image +
       '<p><strong>Location:</strong> ' + safe(property.town) + ', ' + safe(property.region) + '</p>' +
-      '<p><strong>Type:</strong> ' + safe(property.property_type) + '</p>' +
       '<p><strong>Rent:</strong> GH₵' + Number(property.rent_amount).toLocaleString() + ' / ' + safe(property.rent_period) + '</p>' +
       '<p><strong>Contact:</strong> ' + safe(property.contact_phone) + '</p>' +
-      '<p><strong>Status:</strong> ' + safe(property.status) + '</p>' +
+      '<p><strong>Status:</strong> ' + statusBadge(property.status) + '</p>' +
       '<p>' + safe(property.description || "") + '</p>' +
       '<div class="actions">' +
       '<button class="success" data-action="approved">Approve</button>' +
@@ -545,8 +624,7 @@ async function updatePropertyStatus(propertyId,newStatus) {
     return;
   }
 
-  const actionText = newStatus === "approved" ? "approve" : "reject";
-  if (!confirm("Are you sure you want to " + actionText + " this property?")) return;
+  if (!confirm("Are you sure you want to " + (newStatus === "approved" ? "approve" : "reject") + " this property?")) return;
 
   const {data,error} = await db.from("properties")
     .update({status:newStatus})
@@ -559,13 +637,14 @@ async function updatePropertyStatus(propertyId,newStatus) {
   }
 
   if (!data || data.length === 0) {
-    alert("No property was updated. Please check the admin permissions in Supabase.");
+    alert("No property was updated. Please check admin permissions.");
     return;
   }
 
-  alert("Property " + actionText + "ed successfully.");
+  alert("Property " + (newStatus === "approved" ? "approved" : "rejected") + " successfully.");
   await loadAdminProperties();
   await loadProperties();
+  await loadMyProperties();
 }
 
 async function initializeApp() {
