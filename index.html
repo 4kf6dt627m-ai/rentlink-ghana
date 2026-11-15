@@ -49,9 +49,21 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .pending{background:#fff2d7;color:#8a5b00}
 .approved{background:#dff5e8;color:#116b3c}
 .rejected{background:#fbe4e4;color:#a32121}
-label{font-weight:bold;font-size:14px}
+.detail-image{width:100%;max-height:430px;object-fit:cover;border-radius:10px;background:#e7edf2}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:20px 0}
+.detail-item{background:#edf2f7;padding:15px;border-radius:8px}
+.detail-item strong{display:block;color:var(--dark);margin-bottom:6px}
+.detail-description{line-height:1.7;white-space:pre-wrap}
+.detail-contact{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.detail-contact a{text-decoration:none}
 footer{text-align:center;background:var(--dark);color:white;padding:25px;margin-top:40px}
-@media(max-width:600px){.hero h1{font-size:28px}header{justify-content:center;text-align:center}nav{justify-content:center}.stats{gap:6px}.stat{padding:10px 4px}}
+@media(max-width:600px){
+.hero h1{font-size:28px}
+header{justify-content:center;text-align:center}
+nav{justify-content:center}
+.stats{gap:6px}
+.stat{padding:10px 4px}
+}
 </style>
 </head>
 <body>
@@ -96,6 +108,12 @@ footer{text-align:center;background:var(--dark);color:white;padding:25px;margin-
   <button class="primary" onclick="loadProperties()">Search Properties</button>
   <div id="propertyMessage" class="status">Loading properties...</div>
   <div id="propertyList" class="property-grid"></div>
+</section>
+
+<!-- NEW PROPERTY DETAILS PAGE -->
+<section id="propertyDetails" class="panel hidden">
+  <button class="primary" onclick="showSection('browse')">← Back to Properties</button>
+  <div id="detailContent"></div>
 </section>
 
 <section id="account" class="panel hidden">
@@ -236,7 +254,7 @@ let currentProfile = null;
 let isAdmin = false;
 
 function showSection(sectionId) {
-  ["browse","account","upload","landlord","admin"].forEach(id => {
+  ["browse","propertyDetails","account","upload","landlord","admin"].forEach(id => {
     document.getElementById(id).classList.add("hidden");
   });
 
@@ -271,6 +289,44 @@ function safe(value) {
 function statusBadge(status) {
   const known = ["pending","approved","rejected"].includes(status) ? status : "pending";
   return '<span class="status-badge ' + known + '">' + safe(known.toUpperCase()) + '</span>';
+}
+
+function showPropertyDetails(property) {
+  const content = document.getElementById("detailContent");
+  const whatsapp = String(property.contact_phone || "").replace(/\D/g,"");
+
+  const image = property.image_url
+    ? '<img class="detail-image" src="' + safe(property.image_url) + '" alt="Photograph of ' + safe(property.title) + '">'
+    : '<div class="detail-image" style="height:220px;display:grid;place-items:center">No property photo available</div>';
+
+  const whatsappButton = whatsapp
+    ? '<a target="_blank" rel="noopener" href="https://wa.me/' + whatsapp + '?text=' + encodeURIComponent("Hello, I am interested in your property listed on RAYMOND HOMES: " + property.title) + '"><button class="success">Contact Landlord on WhatsApp</button></a>'
+    : "";
+
+  const phoneButton = property.contact_phone
+    ? '<a href="tel:' + safe(property.contact_phone) + '"><button class="primary">Call Landlord</button></a>'
+    : "";
+
+  content.innerHTML =
+    '<h2 style="margin-top:20px">' + safe(property.title) + '</h2>' +
+    image +
+    '<p class="price">GH₵' + Number(property.rent_amount).toLocaleString() + ' / ' + safe(property.rent_period) + '</p>' +
+    '<p><strong>' + safe(property.property_type) + '</strong></p>' +
+    '<div class="detail-grid">' +
+      '<div class="detail-item"><strong>Region</strong>' + safe(property.region) + '</div>' +
+      '<div class="detail-item"><strong>Town</strong>' + safe(property.town) + '</div>' +
+      '<div class="detail-item"><strong>Area</strong>' + safe(property.area || "Not provided") + '</div>' +
+      '<div class="detail-item"><strong>Bedrooms</strong>' + safe(property.bedrooms ?? 0) + '</div>' +
+      '<div class="detail-item"><strong>Bathrooms</strong>' + safe(property.bathrooms ?? 0) + '</div>' +
+      '<div class="detail-item"><strong>Advance required</strong>' + safe(property.advance_month ?? 0) + ' month(s)</div>' +
+    '</div>' +
+    '<h3>About this property</h3>' +
+    '<p class="detail-description">' + safe(property.description || "No description provided.") + '</p>' +
+    '<h3>Interested in this property?</h3>' +
+    '<p>Contact the landlord directly to ask questions or arrange a viewing.</p>' +
+    '<div class="detail-contact">' + whatsappButton + phoneButton + '</div>';
+
+  showSection("propertyDetails");
 }
 
 async function registerAccount() {
@@ -487,19 +543,19 @@ async function loadProperties() {
     const image = property.image_url
       ? '<img src="' + safe(property.image_url) + '" alt="Property photograph">'
       : '<div style="height:190px;display:grid;place-items:center">No photo available</div>';
-    const whatsapp = String(property.contact_phone || "").replace(/\D/g,"");
 
     card.innerHTML = image +
       '<div class="property-info">' +
       '<h3>' + safe(property.title) + '</h3>' +
       '<p>' + safe(property.property_type) + ' · ' + safe(property.town) + ', ' + safe(property.region) + '</p>' +
-      '<p>' + safe(property.area || "") + '</p>' +
       '<p>' + safe(property.bedrooms) + ' bedrooms · ' + safe(property.bathrooms) + ' bathrooms</p>' +
       '<p class="price">GH₵' + Number(property.rent_amount).toLocaleString() + ' / ' + safe(property.rent_period) + '</p>' +
-      '<p>Advance: ' + safe(property.advance_month) + ' month(s)</p>' +
-      '<p>' + safe(property.description || "") + '</p>' +
-      (whatsapp ? '<a target="_blank" rel="noopener" href="https://wa.me/' + whatsapp + '?text=' + encodeURIComponent("Hello, I am interested in your property listed on RAYMOND HOMES.") + '"><button class="success">Contact on WhatsApp</button></a>' : '') +
+      '<button class="primary view-details">View Details</button>' +
       '</div>';
+
+    card.querySelector(".view-details").addEventListener("click",() => {
+      showPropertyDetails(property);
+    });
 
     list.appendChild(card);
   });
