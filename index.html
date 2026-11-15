@@ -60,6 +60,15 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .enquiry-message{background:#f4f7fa;padding:12px;border-radius:8px;white-space:pre-wrap}
 .payment-instructions{background:#fff8e8;border:1px solid #f0d38b;border-radius:9px;padding:16px;margin:15px 0;line-height:1.7}
 .payment-instructions strong{color:#805400}
+
+/* Featured properties section */
+.featured-section{background:#fffaf0;border:1px solid #f0d38b;border-radius:12px;padding:18px;margin:20px 0}
+.featured-heading{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.featured-heading h2{margin:0}
+.featured-label{display:inline-block;background:#e9ad35;color:#182333;padding:6px 11px;border-radius:20px;font-size:11px;font-weight:bold}
+.featured-card{border:2px solid #e9ad35}
+.featured-card .property-info{background:#fffdf7}
+
 footer{text-align:center;background:var(--dark);color:white;padding:25px;margin-top:40px}
 @media(max-width:600px){
 .hero h1{font-size:28px}
@@ -96,6 +105,17 @@ nav{justify-content:center}
 <section id="browse" class="panel">
   <h2>Find Your Next Home</h2>
   <p class="small">Browse properties approved for public viewing.</p>
+
+  <div class="featured-section">
+    <div class="featured-heading">
+      <span class="featured-label">★ FEATURED</span>
+      <h2>Featured Properties</h2>
+    </div>
+    <p class="small">Promoted homes selected by RAYMOND HOMES. Featured listings appear here while their 7-day promotion is active.</p>
+    <div id="featuredMessage" class="status">Loading featured properties...</div>
+    <div id="featuredPropertyList" class="property-grid"></div>
+  </div>
+
   <label>Search by region</label>
   <select id="searchRegion">
     <option value="">All regions</option>
@@ -593,31 +613,83 @@ async function submitProperty(){
   finally{button.disabled=false;button.textContent="Submit Property for Approval"}
 }
 
+/* Load featured and ordinary approved properties separately */
 async function loadProperties(){
   const list=document.getElementById("propertyList");
-  message("propertyMessage","Loading approved properties...");
+  const featuredList=document.getElementById("featuredPropertyList");
+
   list.innerHTML="";
+  featuredList.innerHTML="";
+
+  message("propertyMessage","Loading approved properties...");
+  message("featuredMessage","Loading featured properties...");
+
   let query=db.from("properties").select("*").eq("status","approved").order("created_at",{ascending:false});
+
   const region=document.getElementById("searchRegion").value;
   const town=document.getElementById("searchTown").value.trim();
+
   if(region)query=query.eq("region",region);
   if(town)query=query.ilike("town","%"+town+"%");
+
   const {data,error}=await query;
-  if(error){message("propertyMessage","Could not load properties: "+error.message);return}
-  if(!data||data.length===0){message("propertyMessage","No approved properties found yet. Please check again soon.");return}
-  message("propertyMessage",data.length+" approved property/properties found.");
-  data.forEach(property=>{
-    const card=document.createElement("article");card.className="property-card";
-    const image=property.image_url?'<img src="'+safe(property.image_url)+'" alt="Property photograph">':'<div style="height:190px;display:grid;place-items:center">No photo available</div>';
-    card.innerHTML=image+'<div class="property-info"><h3>'+safe(property.title)+'</h3>'+
+
+  if(error){
+    message("propertyMessage","Could not load properties: "+error.message);
+    message("featuredMessage","Could not load featured properties.");
+    return;
+  }
+
+  if(!data||data.length===0){
+    message("propertyMessage","No approved properties found yet. Please check again soon.");
+    message("featuredMessage","No featured properties right now. Check back soon.");
+    return;
+  }
+
+  const featured=data.filter(property=>featuredActive(property));
+  const regular=data.filter(property=>!featuredActive(property));
+
+  featured.sort((a,b)=>new Date(b.featured_until)-new Date(a.featured_until));
+
+  function createPropertyCard(property,isFeatured){
+    const card=document.createElement("article");
+    card.className="property-card"+(isFeatured?" featured-card":"");
+
+    const image=property.image_url
+      ?'<img src="'+safe(property.image_url)+'" alt="Property photograph">'
+      :'<div style="height:190px;display:grid;place-items:center">No photo available</div>';
+
+    card.innerHTML=image+
+      '<div class="property-info">'+
+      (isFeatured?'<p><span class="featured-label">★ FEATURED</span></p>':"")+
+      '<h3>'+safe(property.title)+'</h3>'+
       '<p>'+safe(property.property_type)+' · '+safe(property.town)+', '+safe(property.region)+'</p>'+
       '<p>'+safe(property.bedrooms)+' bedrooms · '+safe(property.bathrooms)+' bathrooms</p>'+
       '<p class="price">GH₵'+Number(property.rent_amount).toLocaleString()+' / '+safe(property.rent_period)+'</p>'+
-      (featuredActive(property)?'<p><span class="status-badge approved">FEATURED</span></p>':"")+
-      '<button class="primary view-details">View Details</button></div>';
+      '<button class="primary view-details">View Details</button>'+
+      '</div>';
+
     card.querySelector(".view-details").addEventListener("click",()=>showPropertyDetails(property));
-    list.appendChild(card);
-  });
+    return card;
+  }
+
+  if(featured.length===0){
+    message("featuredMessage","No featured properties right now. Check back soon.");
+  }else{
+    message("featuredMessage",featured.length+" featured property/properties available.");
+    featured.forEach(property=>{
+      featuredList.appendChild(createPropertyCard(property,true));
+    });
+  }
+
+  if(regular.length===0){
+    message("propertyMessage","No ordinary listings found. Check the Featured Properties section above.");
+  }else{
+    message("propertyMessage",regular.length+" ordinary approved property/properties found.");
+    regular.forEach(property=>{
+      list.appendChild(createPropertyCard(property,false));
+    });
+  }
 }
 
 async function loadMyProperties(){
