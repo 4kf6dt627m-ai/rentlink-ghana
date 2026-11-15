@@ -1,4 +1,5 @@
-DOCTYP html>
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -6,7 +7,7 @@ DOCTYP html>
 <title>RAYMOND HOMES | Ghana Property Rentals</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--dark:#10243a;--blue:#174d78;--gold:#e9ad35;--light:#f4f7fa;--white:#fff;--red:#c43d3d;--green:#16834b}
+:root{--dark:#10243a;--blue:#174d78;--gold:#e9ad35;--light:#f4f7fa;--red:#c43d3d;--green:#16834b}
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,sans-serif;background:var(--light);color:#202b36}
 header{background:var(--dark);color:white;padding:17px 5%;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
@@ -38,7 +39,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .property-info{padding:15px}
 .property-info h3{margin:0 0 8px;color:var(--dark)}
 .price{font-size:20px;font-weight:bold;color:var(--blue)}
-.admin-card{border:1px solid #dce3e9;border-radius:9px;padding:15px;margin:12px 0;background:#fff}
+.admin-card,.enquiry-card{border:1px solid #dce3e9;border-radius:9px;padding:15px;margin:12px 0;background:#fff}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:15px 0}
 .stat{background:#edf2f7;border-radius:9px;padding:15px;text-align:center}
@@ -56,6 +57,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .detail-contact{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
 .detail-contact a{text-decoration:none}
 .enquiry-box{background:#f4f7fa;padding:18px;border-radius:10px;margin-top:25px}
+.enquiry-message{background:#f4f7fa;padding:12px;border-radius:8px;white-space:pre-wrap}
 footer{text-align:center;background:var(--dark);color:white;padding:25px;margin-top:40px}
 @media(max-width:600px){
 .hero h1{font-size:28px}
@@ -74,6 +76,7 @@ nav{justify-content:center}
     <button onclick="showSection('browse')">Find a House</button>
     <button onclick="showSection('account')">My Account</button>
     <button id="myPropertiesNav" class="hidden" onclick="showSection('landlord')">My Properties</button>
+    <button id="enquiriesNav" class="hidden" onclick="showSection('enquiries')">Enquiries Inbox</button>
     <button onclick="showSection('upload')">Upload Property</button>
     <button id="adminNav" class="hidden" onclick="showSection('admin')">Admin Dashboard</button>
   </nav>
@@ -81,8 +84,7 @@ nav{justify-content:center}
 
 <section class="hero">
   <h1>Find a Place You Can Call <strong>Home</strong></h1>
-  <p>Discover houses and apartments for rent across Ghana.<br>
-  Your next home starts with RAYMOND HOMES.</p>
+  <p>Discover houses and apartments for rent across Ghana.<br>Your next home starts with RAYMOND HOMES.</p>
   <button class="gold" onclick="showSection('browse')">Explore Properties</button>
 </section>
 
@@ -94,14 +96,11 @@ nav{justify-content:center}
   <label>Search by region</label>
   <select id="searchRegion">
     <option value="">All regions</option>
-    <option>Greater Accra</option><option>Ashanti</option>
-    <option>Eastern</option><option>Central</option>
-    <option>Western</option><option>Western North</option>
-    <option>Volta</option><option>Oti</option>
-    <option>Upper East</option><option>Upper West</option>
-    <option>Northern</option><option>Savannah</option>
-    <option>North East</option><option>Bono</option>
-    <option>Bono East</option><option>Ahafo</option>
+    <option>Greater Accra</option><option>Ashanti</option><option>Eastern</option>
+    <option>Central</option><option>Western</option><option>Western North</option>
+    <option>Volta</option><option>Oti</option><option>Upper East</option>
+    <option>Upper West</option><option>Northern</option><option>Savannah</option>
+    <option>North East</option><option>Bono</option><option>Bono East</option><option>Ahafo</option>
   </select>
   <label>Town or area</label>
   <input id="searchTown" placeholder="Example: Madina, Kasoa, Kumasi">
@@ -118,17 +117,12 @@ nav{justify-content:center}
 <section id="account" class="panel hidden">
   <h2>My RAYMOND HOMES Account</h2>
   <div id="accountStatus" class="status">You are not logged in.</div>
-
   <div id="registerBox">
     <h3>Create an Account</h3>
-    <label>Full name</label>
-    <input id="regName" placeholder="Your full name">
-    <label>Phone number</label>
-    <input id="regPhone" placeholder="Your phone number">
-    <label>Email address</label>
-    <input id="regEmail" type="email" placeholder="Your email">
-    <label>Password</label>
-    <input id="regPassword" type="password" placeholder="Create a password">
+    <label>Full name</label><input id="regName" placeholder="Your full name">
+    <label>Phone number</label><input id="regPhone" placeholder="Your phone number">
+    <label>Email address</label><input id="regEmail" type="email" placeholder="Your email">
+    <label>Password</label><input id="regPassword" type="password" placeholder="Create a password">
     <label>Account type</label>
     <select id="regRole">
       <option value="tenant">Tenant</option>
@@ -137,92 +131,67 @@ nav{justify-content:center}
     </select>
     <button class="primary" onclick="registerAccount()">Create Account</button>
   </div>
-
   <div id="loginBox">
-    <hr>
-    <h3>Login</h3>
-    <label>Email address</label>
-    <input id="loginEmail" type="email" placeholder="Your email">
-    <label>Password</label>
-    <input id="loginPassword" type="password" placeholder="Your password">
+    <hr><h3>Login</h3>
+    <label>Email address</label><input id="loginEmail" type="email" placeholder="Your email">
+    <label>Password</label><input id="loginPassword" type="password" placeholder="Your password">
     <button class="primary" onclick="loginAccount()">Login</button>
   </div>
-
   <button id="logoutButton" class="danger hidden" onclick="logoutAccount()">Log Out</button>
 </section>
 
 <section id="landlord" class="panel hidden">
   <h2>My Properties Dashboard</h2>
   <p class="small">Manage and monitor properties submitted through your account.</p>
-
   <div class="stats">
     <div class="stat"><strong id="totalCount">0</strong><span>Total listings</span></div>
     <div class="stat"><strong id="approvedCount">0</strong><span>Approved</span></div>
     <div class="stat"><strong id="pendingCount">0</strong><span>Pending</span></div>
   </div>
-
-  <div class="stat" style="margin-bottom:15px">
-    <strong id="rejectedCount">0</strong>
-    <span>Rejected listings</span>
-  </div>
-
+  <div class="stat" style="margin-bottom:15px"><strong id="rejectedCount">0</strong><span>Rejected listings</span></div>
   <button class="primary" onclick="loadMyProperties()">Refresh My Properties</button>
   <div id="landlordMessage" class="status">Loading your properties...</div>
   <div id="myPropertyList"></div>
+</section>
+
+<section id="enquiries" class="panel hidden">
+  <h2>Landlord Enquiries Inbox</h2>
+  <p class="small">View tenants who have requested to visit your properties.</p>
+  <button class="primary" onclick="loadLandlordEnquiries()">Refresh Enquiries</button>
+  <div id="enquiriesMessage" class="status">Your viewing requests will appear here.</div>
+  <div id="enquiriesList"></div>
 </section>
 
 <section id="upload" class="panel hidden">
   <h2>Upload a Property</h2>
   <div id="uploadNotice" class="status">Please log in with a landlord or agent account.</div>
   <div id="uploadForm" class="hidden">
-    <label>Property title</label>
-    <input id="propertyTitle" placeholder="Example: 2-bedroom apartment">
-    <label>Description</label>
-    <textarea id="propertyDescription" placeholder="Describe the property and its facilities"></textarea>
+    <label>Property title</label><input id="propertyTitle" placeholder="Example: 2-bedroom apartment">
+    <label>Description</label><textarea id="propertyDescription" placeholder="Describe the property and its facilities"></textarea>
     <label>Region</label>
     <select id="propertyRegion">
       <option value="">Choose region</option>
-      <option>Greater Accra</option><option>Ashanti</option>
-      <option>Eastern</option><option>Central</option>
-      <option>Western</option><option>Western North</option>
-      <option>Volta</option><option>Oti</option>
-      <option>Upper East</option><option>Upper West</option>
-      <option>Northern</option><option>Savannah</option>
-      <option>North East</option><option>Bono</option>
-      <option>Bono East</option><option>Ahafo</option>
+      <option>Greater Accra</option><option>Ashanti</option><option>Eastern</option>
+      <option>Central</option><option>Western</option><option>Western North</option>
+      <option>Volta</option><option>Oti</option><option>Upper East</option>
+      <option>Upper West</option><option>Northern</option><option>Savannah</option>
+      <option>North East</option><option>Bono</option><option>Bono East</option><option>Ahafo</option>
     </select>
-    <label>Town</label>
-    <input id="propertyTown" placeholder="Town">
-    <label>Area / neighbourhood</label>
-    <input id="propertyArea" placeholder="Area or neighbourhood">
+    <label>Town</label><input id="propertyTown" placeholder="Town">
+    <label>Area / neighbourhood</label><input id="propertyArea" placeholder="Area or neighbourhood">
     <label>Property type</label>
     <select id="propertyType">
-      <option value="Apartment">Apartment</option>
-      <option value="Self-contained">Self-contained</option>
-      <option value="Chamber and Hall">Chamber and Hall</option>
-      <option value="Single Room">Single Room</option>
-      <option value="House">House</option>
-      <option value="Shop">Shop</option>
-      <option value="Land">Land</option>
+      <option>Apartment</option><option>Self-contained</option><option>Chamber and Hall</option>
+      <option>Single Room</option><option>House</option><option>Shop</option><option>Land</option>
     </select>
-    <label>Number of bedrooms</label>
-    <input id="bedrooms" type="number" min="0" placeholder="Bedrooms">
-    <label>Number of bathrooms</label>
-    <input id="bathrooms" type="number" min="0" placeholder="Bathrooms">
-    <label>Rent amount (GH₵)</label>
-    <input id="rentAmount" type="number" min="1" placeholder="Rent amount">
+    <label>Number of bedrooms</label><input id="bedrooms" type="number" min="0" placeholder="Bedrooms">
+    <label>Number of bathrooms</label><input id="bathrooms" type="number" min="0" placeholder="Bathrooms">
+    <label>Rent amount (GH₵)</label><input id="rentAmount" type="number" min="1" placeholder="Rent amount">
     <label>Rent period</label>
-    <select id="rentPeriod">
-      <option value="Monthly">Monthly</option>
-      <option value="Yearly">Yearly</option>
-      <option value="One-time">One-time</option>
-    </select>
-    <label>Advance required (months)</label>
-    <input id="advanceMonth" type="number" min="0" placeholder="Example: 12">
-    <label>Contact phone / WhatsApp</label>
-    <input id="contactPhone" placeholder="Phone number">
-    <label>Property photograph</label>
-    <input id="propertyImage" type="file" accept="image/*">
+    <select id="rentPeriod"><option>Monthly</option><option>Yearly</option><option>One-time</option></select>
+    <label>Advance required (months)</label><input id="advanceMonth" type="number" min="0" placeholder="Example: 12">
+    <label>Contact phone / WhatsApp</label><input id="contactPhone" placeholder="Phone number">
+    <label>Property photograph</label><input id="propertyImage" type="file" accept="image/*">
     <p class="small">Upload a property photo only. Do not upload identity documents or private information.</p>
     <button class="gold" onclick="submitProperty()">Submit Property for Approval</button>
   </div>
@@ -244,538 +213,332 @@ nav{justify-content:center}
 </footer>
 
 <script>
-const SUPABASE_URL = "https://gloeodrutneogyslyxpn.supabase.co";
-const SUPABASE_KEY = "sb_publishable_KpbH6SIOkTThq1BiQ8EobA_XdMwa7ru";
-const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const SUPABASE_URL="https://gloeodrutneogyslyxpn.supabase.co";
+const SUPABASE_KEY="sb_publishable_KpbH6SIOkTThq1BiQ8EobA_XdMwa7ru";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-let currentUser = null;
-let currentProfile = null;
-let isAdmin = false;
+let currentUser=null,currentProfile=null,isAdmin=false;
 
-function showSection(sectionId) {
-  ["browse","propertyDetails","account","upload","landlord","admin"].forEach(id => {
-    document.getElementById(id).classList.add("hidden");
-  });
+function message(id,text){document.getElementById(id).textContent=text}
+function safe(value){
+  return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+}
+function statusBadge(status){
+  const known=["pending","approved","rejected"].includes(status)?status:"pending";
+  return '<span class="status-badge '+known+'">'+safe(known.toUpperCase())+'</span>';
+}
 
-  if (sectionId === "admin" && !isAdmin) {
-    alert("Admin access is not available for this account.");
-    return;
+function showSection(sectionId){
+  ["browse","propertyDetails","account","upload","landlord","admin","enquiries"].forEach(id=>document.getElementById(id).classList.add("hidden"));
+  if(sectionId==="admin"&&!isAdmin){alert("Admin access is not available for this account.");return}
+  if(["landlord","upload","enquiries"].includes(sectionId)&&!currentUser){
+    alert("Please log in first.");showSection("account");return;
   }
-
-  if ((sectionId === "landlord" || sectionId === "upload") && !currentUser) {
-    alert("Please log in first.");
-    showSection("account");
-    return;
-  }
-
   document.getElementById(sectionId).classList.remove("hidden");
-
-  if (sectionId === "browse") loadProperties();
-  if (sectionId === "landlord") loadMyProperties();
-  if (sectionId === "admin") loadAdminProperties();
+  if(sectionId==="browse")loadProperties();
+  if(sectionId==="landlord")loadMyProperties();
+  if(sectionId==="admin")loadAdminProperties();
+  if(sectionId==="enquiries")loadLandlordEnquiries();
 }
 
-function message(id,text) {
-  document.getElementById(id).textContent = text;
-}
-
-function safe(value) {
-  return String(value ?? "").replace(/[&<>"']/g,char => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[char]));
-}
-
-function statusBadge(status) {
-  const known = ["pending","approved","rejected"].includes(status) ? status : "pending";
-  return '<span class="status-badge ' + known + '">' + safe(known.toUpperCase()) + '</span>';
-}
-
-function showPropertyDetails(property) {
-  const content = document.getElementById("detailContent");
-  const whatsapp = String(property.contact_phone || "").replace(/\D/g,"");
-
-  const image = property.image_url
-    ? '<img class="detail-image" src="' + safe(property.image_url) + '" alt="Photograph of ' + safe(property.title) + '">'
-    : '<div class="detail-image" style="height:220px;display:grid;place-items:center">No property photo available</div>';
-
-  const whatsappButton = whatsapp
-    ? '<a target="_blank" rel="noopener" href="https://wa.me/' + whatsapp + '?text=' + encodeURIComponent("Hello, I am interested in your property listed on RAYMOND HOMES: " + property.title) + '"><button class="success">Contact Landlord on WhatsApp</button></a>'
-    : "";
-
-  const phoneButton = property.contact_phone
-    ? '<a href="tel:' + safe(property.contact_phone) + '"><button class="primary">Call Landlord</button></a>'
-    : "";
-
-  content.innerHTML =
-    '<h2 style="margin-top:20px">' + safe(property.title) + '</h2>' +
-    image +
-    '<p class="price">GH₵' + Number(property.rent_amount).toLocaleString() + ' / ' + safe(property.rent_period) + '</p>' +
-    '<p><strong>' + safe(property.property_type) + '</strong></p>' +
-    '<div class="detail-grid">' +
-      '<div class="detail-item"><strong>Region</strong>' + safe(property.region) + '</div>' +
-      '<div class="detail-item"><strong>Town</strong>' + safe(property.town) + '</div>' +
-      '<div class="detail-item"><strong>Area</strong>' + safe(property.area || "Not provided") + '</div>' +
-      '<div class="detail-item"><strong>Bedrooms</strong>' + safe(property.bedrooms ?? 0) + '</div>' +
-      '<div class="detail-item"><strong>Bathrooms</strong>' + safe(property.bathrooms ?? 0) + '</div>' +
-      '<div class="detail-item"><strong>Advance required</strong>' + safe(property.advance_month ?? 0) + ' month(s)</div>' +
-    '</div>' +
-    '<h3>About this property</h3>' +
-    '<p class="detail-description">' + safe(property.description || "No description provided.") + '</p>' +
-    '<h3>Interested in this property?</h3>' +
-    '<p>Contact the landlord directly or send a viewing request below.</p>' +
-    '<div class="detail-contact">' + whatsappButton + phoneButton + '</div>' +
-
-    '<div class="enquiry-box">' +
-      '<h3>Request a Viewing</h3>' +
-      '<p class="small">Send your details to the landlord. You must be logged in to submit an enquiry.</p>' +
-      '<label>Your full name</label>' +
-      '<input id="enquiryName" placeholder="Enter your full name" value="' + safe(currentProfile?.full_name || currentUser?.user_metadata?.full_name || "") + '">' +
-      '<label>Your phone number</label>' +
-      '<input id="enquiryPhone" type="tel" placeholder="Enter your phone number">' +
-      '<label>Your message</label>' +
-      '<textarea id="enquiryMessage" placeholder="Hello, I am interested in this property. I would like to arrange a viewing."></textarea>' +
-      '<button id="enquirySubmitButton" class="gold" onclick="submitEnquiry(\'' + safe(property.id) + '\')">Send Viewing Request</button>' +
-      '<div id="enquiryStatus" class="status hidden"></div>' +
-    '</div>';
-
-  showSection("propertyDetails");
-}
-
-async function submitEnquiry(propertyId) {
-  if (!currentUser) {
-    alert("Please log in before sending a viewing request.");
-    showSection("account");
-    return;
-  }
-
-  const tenantName = document.getElementById("enquiryName").value.trim();
-  const tenantPhone = document.getElementById("enquiryPhone").value.trim();
-  const enquiryMessage = document.getElementById("enquiryMessage").value.trim();
-  const statusBox = document.getElementById("enquiryStatus");
-  const submitButton = document.getElementById("enquirySubmitButton");
-
-  if (!tenantName || !tenantPhone || !enquiryMessage) {
-    alert("Please enter your name, phone number and message.");
-    return;
-  }
-
-  if (tenantPhone.length < 7) {
-    alert("Please enter a valid phone number.");
-    return;
-  }
-
-  submitButton.disabled = true;
-  submitButton.textContent = "Sending...";
-  statusBox.classList.remove("hidden");
-  statusBox.textContent = "Sending your viewing request...";
-
-  try {
-    const {error} = await db.from("property_enquiries").insert({
-      property_id:propertyId,
-      tenant_id:currentUser.id,
-      tenant_name:tenantName,
-      tenant_phone:tenantPhone,
-      message:enquiryMessage
-    });
-
-    if (error) throw error;
-
-    statusBox.textContent = "Your viewing request has been sent successfully! The landlord can now see your enquiry.";
-    document.getElementById("enquiryMessage").value = "";
-    submitButton.textContent = "Request Sent";
-  } catch(error) {
-    statusBox.textContent = "Could not send your request: " + error.message;
-    submitButton.disabled = false;
-    submitButton.textContent = "Send Viewing Request";
-  }
-}
-
-async function registerAccount() {
-  const fullName = document.getElementById("regName").value.trim();
-  const phone = document.getElementById("regPhone").value.trim();
-  const email = document.getElementById("regEmail").value.trim();
-  const password = document.getElementById("regPassword").value;
-  const role = document.getElementById("regRole").value;
-
-  if (!fullName || !phone || !email || !password) {
-    alert("Please complete all registration fields.");
-    return;
-  }
-  if (password.length < 6) {
-    alert("Your password must be at least 6 characters.");
-    return;
-  }
-
-  const {error} = await db.auth.signUp({
-    email,password,
-    options:{data:{full_name:fullName,phone,role}}
-  });
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  alert("Account created. Check your email and tap the confirmation link before logging in.");
-  document.getElementById("loginEmail").value = email;
-  document.getElementById("registerBox").classList.add("hidden");
-}
-
-async function loginAccount() {
-  const email = document.getElementById("loginEmail").value.trim();
-  const password = document.getElementById("loginPassword").value;
-
-  const {data,error} = await db.auth.signInWithPassword({email,password});
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  currentUser = data.user;
-  await refreshAccount();
-  showSection("account");
-}
-
-async function logoutAccount() {
-  const {error} = await db.auth.signOut();
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  currentUser = null;
-  currentProfile = null;
-  isAdmin = false;
-  updateAccountUI();
-  showSection("browse");
-  alert("You have logged out.");
-}
-
-async function refreshAccount() {
-  const {data:{user}} = await db.auth.getUser();
-  currentUser = user || null;
-  currentProfile = null;
-  isAdmin = false;
-
-  if (currentUser) {
-    const {data:profile} = await db.from("profiles")
-      .select("id,full_name,role")
-      .eq("id",currentUser.id)
-      .maybeSingle();
-
-    currentProfile = profile || {
-      full_name:currentUser.user_metadata?.full_name || "",
-      role:currentUser.user_metadata?.role || "tenant"
-    };
-
-    const {data:adminRecord,error:adminError} = await db.from("rentlink_admins")
-      .select("user_id")
-      .eq("user_id",currentUser.id)
-      .maybeSingle();
-
-    isAdmin = !adminError && !!adminRecord;
-  }
-
-  updateAccountUI();
-}
-
-function updateAccountUI() {
-  const loggedIn = !!currentUser;
+function updateAccountUI(){
+  const loggedIn=!!currentUser;
   document.getElementById("registerBox").classList.toggle("hidden",loggedIn);
   document.getElementById("loginBox").classList.toggle("hidden",loggedIn);
   document.getElementById("logoutButton").classList.toggle("hidden",!loggedIn);
   document.getElementById("adminNav").classList.toggle("hidden",!isAdmin);
   document.getElementById("myPropertiesNav").classList.toggle("hidden",!loggedIn);
+  document.getElementById("enquiriesNav").classList.toggle("hidden",!loggedIn);
 
-  if (!loggedIn) {
+  if(!loggedIn){
     message("accountStatus","You are not logged in.");
     document.getElementById("uploadForm").classList.add("hidden");
     message("uploadNotice","Please log in with a landlord or agent account.");
     return;
   }
-
-  const name = currentProfile?.full_name || currentUser.email;
-  const role = currentProfile?.role || "tenant";
-  message("accountStatus","Logged in as " + name + " (" + role + ")" + (isAdmin ? " — Admin access confirmed." : ""));
-
-  const canUpload = role === "landlord" || role === "agent";
+  const name=currentProfile?.full_name||currentUser.email;
+  const role=currentProfile?.role||"tenant";
+  message("accountStatus","Logged in as "+name+" ("+role+")"+(isAdmin?" — Admin access confirmed.":""));
+  const canUpload=role==="landlord"||role==="agent";
   document.getElementById("uploadForm").classList.toggle("hidden",!canUpload);
-  message("uploadNotice",canUpload ? "You can submit properties for admin approval." : "Your account is registered as a tenant. A landlord or agent account is required to upload new properties.");
+  message("uploadNotice",canUpload?"You can submit properties for admin approval.":"Your account is registered as a tenant. A landlord or agent account is required to upload new properties.");
 }
 
-async function submitProperty() {
-  if (!currentUser) {
-    alert("Please log in first.");
-    return;
+async function refreshAccount(){
+  const {data:{user}}=await db.auth.getUser();
+  currentUser=user||null;currentProfile=null;isAdmin=false;
+  if(currentUser){
+    const {data:profile}=await db.from("profiles").select("id,full_name,role").eq("id",currentUser.id).maybeSingle();
+    currentProfile=profile||{full_name:currentUser.user_metadata?.full_name||"",role:currentUser.user_metadata?.role||"tenant"};
+    const {data:adminRecord,error:adminError}=await db.from("rentlink_admins").select("user_id").eq("user_id",currentUser.id).maybeSingle();
+    isAdmin=!adminError&&!!adminRecord;
   }
-
-  const role = currentProfile?.role || currentUser.user_metadata?.role || "tenant";
-  if (role !== "landlord" && role !== "agent") {
-    alert("Only landlord and agent accounts can submit properties.");
-    return;
-  }
-
-  const title = document.getElementById("propertyTitle").value.trim();
-  const description = document.getElementById("propertyDescription").value.trim();
-  const region = document.getElementById("propertyRegion").value;
-  const town = document.getElementById("propertyTown").value.trim();
-  const area = document.getElementById("propertyArea").value.trim();
-  const property_type = document.getElementById("propertyType").value;
-  const bedrooms = Number(document.getElementById("bedrooms").value || 0);
-  const bathrooms = Number(document.getElementById("bathrooms").value || 0);
-  const rent_amount = Number(document.getElementById("rentAmount").value);
-  const rent_period = document.getElementById("rentPeriod").value;
-  const advance_month = Number(document.getElementById("advanceMonth").value || 0);
-  const contact_phone = document.getElementById("contactPhone").value.trim();
-  const file = document.getElementById("propertyImage").files[0];
-
-  if (!title || !region || !town || !rent_amount || !contact_phone || !file) {
-    alert("Please complete the required fields and choose a property photo.");
-    return;
-  }
-  if (!file.type.startsWith("image/") || file.size > 8 * 1024 * 1024) {
-    alert("Choose an image smaller than 8 MB.");
-    return;
-  }
-
-  const submitButton = document.querySelector("#uploadForm button");
-  submitButton.disabled = true;
-  submitButton.textContent = "Uploading...";
-
-  try {
-    const extension = file.name.split(".").pop().toLowerCase();
-    const imagePath = currentUser.id + "/" + crypto.randomUUID() + "." + extension;
-
-    const {error:uploadError} = await db.storage.from("property-images")
-      .upload(imagePath,file,{contentType:file.type,upsert:false});
-    if (uploadError) throw uploadError;
-
-    const {data:imageData} = db.storage.from("property-images").getPublicUrl(imagePath);
-
-    const property = {
-      owner_id:currentUser.id,title,description,region,town,area,
-      property_type,bedrooms,bathrooms,rent_amount,rent_period,
-      advance_month,contact_phone,image_url:imageData.publicUrl,status:"pending"
-    };
-
-    const {error:insertError} = await db.from("properties").insert(property);
-    if (insertError) throw insertError;
-
-    alert("Property submitted successfully. It will appear publicly after admin approval.");
-    document.getElementById("uploadForm").querySelectorAll("input,textarea").forEach(el => el.value = "");
-  } catch(error) {
-    alert("Property submission failed: " + error.message);
-  } finally {
-    submitButton.disabled = false;
-    submitButton.textContent = "Submit Property for Approval";
-  }
+  updateAccountUI();
 }
 
-async function loadProperties() {
-  const list = document.getElementById("propertyList");
-  message("propertyMessage","Loading approved properties...");
-  list.innerHTML = "";
+async function registerAccount(){
+  const fullName=document.getElementById("regName").value.trim();
+  const phone=document.getElementById("regPhone").value.trim();
+  const email=document.getElementById("regEmail").value.trim();
+  const password=document.getElementById("regPassword").value;
+  const role=document.getElementById("regRole").value;
+  if(!fullName||!phone||!email||!password){alert("Please complete all registration fields.");return}
+  if(password.length<6){alert("Your password must be at least 6 characters.");return}
+  const {error}=await db.auth.signUp({email,password,options:{data:{full_name:fullName,phone,role}}});
+  if(error){alert(error.message);return}
+  alert("Account created. Check your email and tap the confirmation link before logging in.");
+  document.getElementById("loginEmail").value=email;
+  document.getElementById("registerBox").classList.add("hidden");
+}
 
-  let query = db.from("properties").select("*")
-    .eq("status","approved").order("created_at",{ascending:false});
+async function loginAccount(){
+  const email=document.getElementById("loginEmail").value.trim();
+  const password=document.getElementById("loginPassword").value;
+  const {error}=await db.auth.signInWithPassword({email,password});
+  if(error){alert(error.message);return}
+  await refreshAccount();showSection("account");
+}
 
-  const region = document.getElementById("searchRegion").value;
-  const town = document.getElementById("searchTown").value.trim();
+async function logoutAccount(){
+  const {error}=await db.auth.signOut();
+  if(error){alert(error.message);return}
+  currentUser=null;currentProfile=null;isAdmin=false;updateAccountUI();showSection("browse");
+  alert("You have logged out.");
+}
 
-  if (region) query = query.eq("region",region);
-  if (town) query = query.ilike("town","%" + town + "%");
+function showPropertyDetails(property){
+  const whatsapp=String(property.contact_phone||"").replace(/\D/g,"");
+  const image=property.image_url?'<img class="detail-image" src="'+safe(property.image_url)+'" alt="Property photograph">':'<div class="detail-image" style="height:220px;display:grid;place-items:center">No property photo available</div>';
+  const whatsappButton=whatsapp?'<a target="_blank" rel="noopener" href="https://wa.me/'+whatsapp+'?text='+encodeURIComponent("Hello, I am interested in your property listed on RAYMOND HOMES: "+property.title)+'"><button class="success">Contact Landlord on WhatsApp</button></a>':"";
+  const phoneButton=property.contact_phone?'<a href="tel:'+safe(property.contact_phone)+'"><button class="primary">Call Landlord</button></a>':"";
+  document.getElementById("detailContent").innerHTML=
+    '<h2>'+safe(property.title)+'</h2>'+image+
+    '<p class="price">GH₵'+Number(property.rent_amount).toLocaleString()+' / '+safe(property.rent_period)+'</p>'+
+    '<p><strong>'+safe(property.property_type)+'</strong></p>'+
+    '<div class="detail-grid">'+
+    '<div class="detail-item"><strong>Region</strong>'+safe(property.region)+'</div>'+
+    '<div class="detail-item"><strong>Town</strong>'+safe(property.town)+'</div>'+
+    '<div class="detail-item"><strong>Area</strong>'+safe(property.area||"Not provided")+'</div>'+
+    '<div class="detail-item"><strong>Bedrooms</strong>'+safe(property.bedrooms??0)+'</div>'+
+    '<div class="detail-item"><strong>Bathrooms</strong>'+safe(property.bathrooms??0)+'</div>'+
+    '<div class="detail-item"><strong>Advance required</strong>'+safe(property.advance_month??0)+' month(s)</div></div>'+
+    '<h3>About this property</h3><p class="detail-description">'+safe(property.description||"No description provided.")+'</p>'+
+    '<h3>Interested in this property?</h3><div class="detail-contact">'+whatsappButton+phoneButton+'</div>'+
+    '<div class="enquiry-box"><h3>Request a Viewing</h3>'+
+    '<p class="small">You must be logged in to submit an enquiry.</p>'+
+    '<label>Your full name</label><input id="enquiryName" placeholder="Enter your full name" value="'+safe(currentProfile?.full_name||currentUser?.user_metadata?.full_name||"")+'">'+
+    '<label>Your phone number</label><input id="enquiryPhone" type="tel" placeholder="Enter your phone number">'+
+    '<label>Your message</label><textarea id="enquiryMessage" placeholder="Hello, I am interested in this property. I would like to arrange a viewing."></textarea>'+
+    '<button id="enquirySubmitButton" class="gold" onclick="submitEnquiry(\''+safe(property.id)+'\')">Send Viewing Request</button>'+
+    '<div id="enquiryStatus" class="status hidden"></div></div>';
+  showSection("propertyDetails");
+}
 
-  const {data,error} = await query;
-  if (error) {
-    message("propertyMessage","Could not load properties: " + error.message);
-    return;
-  }
-
-  if (!data || data.length === 0) {
-    message("propertyMessage","No approved properties found yet. Please check again soon.");
-    return;
-  }
-
-  message("propertyMessage",data.length + " approved property/properties found.");
-
-  data.forEach(property => {
-    const card = document.createElement("article");
-    card.className = "property-card";
-    const image = property.image_url
-      ? '<img src="' + safe(property.image_url) + '" alt="Property photograph">'
-      : '<div style="height:190px;display:grid;place-items:center">No photo available</div>';
-
-    card.innerHTML = image +
-      '<div class="property-info">' +
-      '<h3>' + safe(property.title) + '</h3>' +
-      '<p>' + safe(property.property_type) + ' · ' + safe(property.town) + ', ' + safe(property.region) + '</p>' +
-      '<p>' + safe(property.bedrooms) + ' bedrooms · ' + safe(property.bathrooms) + ' bathrooms</p>' +
-      '<p class="price">GH₵' + Number(property.rent_amount).toLocaleString() + ' / ' + safe(property.rent_period) + '</p>' +
-      '<button class="primary view-details">View Details</button>' +
-      '</div>';
-
-    card.querySelector(".view-details").addEventListener("click",() => {
-      showPropertyDetails(property);
+async function submitEnquiry(propertyId){
+  if(!currentUser){alert("Please log in before sending a viewing request.");showSection("account");return}
+  const tenantName=document.getElementById("enquiryName").value.trim();
+  const tenantPhone=document.getElementById("enquiryPhone").value.trim();
+  const enquiryMessage=document.getElementById("enquiryMessage").value.trim();
+  const statusBox=document.getElementById("enquiryStatus");
+  const button=document.getElementById("enquirySubmitButton");
+  if(!tenantName||!tenantPhone||!enquiryMessage){alert("Please enter your name, phone number and message.");return}
+  if(tenantPhone.length<7){alert("Please enter a valid phone number.");return}
+  button.disabled=true;button.textContent="Sending...";
+  statusBox.classList.remove("hidden");statusBox.textContent="Sending your viewing request...";
+  try{
+    const {error}=await db.from("property_enquiries").insert({
+      property_id:propertyId,tenant_id:currentUser.id,
+      tenant_name:tenantName,tenant_phone:tenantPhone,message:enquiryMessage
     });
+    if(error)throw error;
+    statusBox.textContent="Your viewing request has been sent successfully! The landlord can now see your enquiry.";
+    document.getElementById("enquiryMessage").value="";
+    button.textContent="Request Sent";
+  }catch(error){
+    statusBox.textContent="Could not send your request: "+error.message;
+    button.disabled=false;button.textContent="Send Viewing Request";
+  }
+}
 
+async function loadLandlordEnquiries(){
+  if(!currentUser){message("enquiriesMessage","Please log in first.");return}
+  const list=document.getElementById("enquiriesList");
+  list.innerHTML="";
+  message("enquiriesMessage","Loading your viewing requests...");
+  try{
+    const {data:properties,error:propertyError}=await db.from("properties")
+      .select("id,title,town,region").eq("owner_id",currentUser.id);
+    if(propertyError)throw propertyError;
+    if(!properties||properties.length===0){
+      message("enquiriesMessage","No properties were found under this account.");
+      return;
+    }
+    const propertyIds=properties.map(p=>p.id);
+    const propertyMap={};
+    properties.forEach(p=>propertyMap[p.id]=p);
+    const {data:enquiries,error}=await db.from("property_enquiries")
+      .select("*").in("property_id",propertyIds).order("created_at",{ascending:false});
+    if(error)throw error;
+    if(!enquiries||enquiries.length===0){
+      message("enquiriesMessage","No viewing requests have been received for your properties yet.");
+      return;
+    }
+    message("enquiriesMessage",enquiries.length+" viewing request(s) received.");
+    enquiries.forEach(enquiry=>{
+      const property=propertyMap[enquiry.property_id]||{};
+      const phone=String(enquiry.tenant_phone||"").replace(/\D/g,"");
+      const card=document.createElement("div");
+      card.className="enquiry-card";
+      const date=enquiry.created_at?new Date(enquiry.created_at).toLocaleString():"Date unavailable";
+      card.innerHTML=
+        '<h3>'+safe(property.title||"Your property")+'</h3>'+
+        '<p class="small">'+safe(property.town||"")+', '+safe(property.region||"")+'</p>'+
+        '<p><strong>Tenant:</strong> '+safe(enquiry.tenant_name||"Not provided")+'</p>'+
+        '<p><strong>Phone:</strong> '+safe(enquiry.tenant_phone||"Not provided")+'</p>'+
+        '<p><strong>Received:</strong> '+safe(date)+'</p>'+
+        '<p><strong>Message:</strong></p><div class="enquiry-message">'+safe(enquiry.message||"No message provided.")+'</div>'+
+        '<div class="actions">'+
+        (phone?'<a href="tel:'+phone+'"><button class="primary">Call Tenant</button></a>':"")+
+        (phone?'<a target="_blank" rel="noopener" href="https://wa.me/'+phone+'"><button class="success">WhatsApp Tenant</button></a>':"")+
+        '</div>';
+      list.appendChild(card);
+    });
+  }catch(error){
+    message("enquiriesMessage","Could not load enquiries: "+error.message);
+  }
+}
+
+async function submitProperty(){
+  if(!currentUser){alert("Please log in first.");return}
+  const role=currentProfile?.role||currentUser.user_metadata?.role||"tenant";
+  if(role!=="landlord"&&role!=="agent"){alert("Only landlord and agent accounts can submit properties.");return}
+  const title=document.getElementById("propertyTitle").value.trim();
+  const description=document.getElementById("propertyDescription").value.trim();
+  const region=document.getElementById("propertyRegion").value;
+  const town=document.getElementById("propertyTown").value.trim();
+  const area=document.getElementById("propertyArea").value.trim();
+  const property_type=document.getElementById("propertyType").value;
+  const bedrooms=Number(document.getElementById("bedrooms").value||0);
+  const bathrooms=Number(document.getElementById("bathrooms").value||0);
+  const rent_amount=Number(document.getElementById("rentAmount").value);
+  const rent_period=document.getElementById("rentPeriod").value;
+  const advance_month=Number(document.getElementById("advanceMonth").value||0);
+  const contact_phone=document.getElementById("contactPhone").value.trim();
+  const file=document.getElementById("propertyImage").files[0];
+  if(!title||!region||!town||!rent_amount||!contact_phone||!file){alert("Please complete the required fields and choose a property photo.");return}
+  if(!file.type.startsWith("image/")||file.size>8*1024*1024){alert("Choose an image smaller than 8 MB.");return}
+  const button=document.querySelector("#uploadForm button");
+  button.disabled=true;button.textContent="Uploading...";
+  try{
+    const extension=file.name.split(".").pop().toLowerCase();
+    const imagePath=currentUser.id+"/"+crypto.randomUUID()+"."+extension;
+    const {error:uploadError}=await db.storage.from("property-images").upload(imagePath,file,{contentType:file.type,upsert:false});
+    if(uploadError)throw uploadError;
+    const {data:imageData}=db.storage.from("property-images").getPublicUrl(imagePath);
+    const {error:insertError}=await db.from("properties").insert({
+      owner_id:currentUser.id,title,description,region,town,area,property_type,
+      bedrooms,bathrooms,rent_amount,rent_period,advance_month,contact_phone,
+      image_url:imageData.publicUrl,status:"pending"
+    });
+    if(insertError)throw insertError;
+    alert("Property submitted successfully. It will appear publicly after admin approval.");
+    document.getElementById("uploadForm").querySelectorAll("input,textarea").forEach(el=>el.value="");
+  }catch(error){alert("Property submission failed: "+error.message)}
+  finally{button.disabled=false;button.textContent="Submit Property for Approval"}
+}
+
+async function loadProperties(){
+  const list=document.getElementById("propertyList");
+  message("propertyMessage","Loading approved properties...");
+  list.innerHTML="";
+  let query=db.from("properties").select("*").eq("status","approved").order("created_at",{ascending:false});
+  const region=document.getElementById("searchRegion").value;
+  const town=document.getElementById("searchTown").value.trim();
+  if(region)query=query.eq("region",region);
+  if(town)query=query.ilike("town","%"+town+"%");
+  const {data,error}=await query;
+  if(error){message("propertyMessage","Could not load properties: "+error.message);return}
+  if(!data||data.length===0){message("propertyMessage","No approved properties found yet. Please check again soon.");return}
+  message("propertyMessage",data.length+" approved property/properties found.");
+  data.forEach(property=>{
+    const card=document.createElement("article");card.className="property-card";
+    const image=property.image_url?'<img src="'+safe(property.image_url)+'" alt="Property photograph">':'<div style="height:190px;display:grid;place-items:center">No photo available</div>';
+    card.innerHTML=image+'<div class="property-info"><h3>'+safe(property.title)+'</h3>'+
+      '<p>'+safe(property.property_type)+' · '+safe(property.town)+', '+safe(property.region)+'</p>'+
+      '<p>'+safe(property.bedrooms)+' bedrooms · '+safe(property.bathrooms)+' bathrooms</p>'+
+      '<p class="price">GH₵'+Number(property.rent_amount).toLocaleString()+' / '+safe(property.rent_period)+'</p>'+
+      '<button class="primary view-details">View Details</button></div>';
+    card.querySelector(".view-details").addEventListener("click",()=>showPropertyDetails(property));
     list.appendChild(card);
   });
 }
 
-async function loadMyProperties() {
-  if (!currentUser) {
-    message("landlordMessage","Please log in to see your properties.");
-    return;
-  }
-
-  const container = document.getElementById("myPropertyList");
-  container.innerHTML = "";
-  message("landlordMessage","Loading your properties...");
-
-  const {data,error} = await db.from("properties")
-    .select("*")
-    .eq("owner_id",currentUser.id)
-    .order("created_at",{ascending:false});
-
-  if (error) {
-    message("landlordMessage","Could not load your properties: " + error.message + ". Your Supabase database may need a policy allowing users to view their own submissions.");
-    return;
-  }
-
-  const properties = data || [];
-  const approved = properties.filter(p => p.status === "approved").length;
-  const pending = properties.filter(p => p.status === "pending").length;
-  const rejected = properties.filter(p => p.status === "rejected").length;
-
-  document.getElementById("totalCount").textContent = properties.length;
-  document.getElementById("approvedCount").textContent = approved;
-  document.getElementById("pendingCount").textContent = pending;
-  document.getElementById("rejectedCount").textContent = rejected;
-
-  if (properties.length === 0) {
-    message("landlordMessage","You have not submitted any properties with this account yet.");
-    return;
-  }
-
-  message("landlordMessage","You have " + properties.length + " property listing(s).");
-
-  properties.forEach(property => {
-    const card = document.createElement("div");
-    card.className = "admin-card";
-
-    const image = property.image_url
-      ? '<img src="' + safe(property.image_url) + '" alt="Property photograph" style="width:100%;max-width:280px;border-radius:8px">'
-      : "";
-
-    card.innerHTML =
-      '<h3>' + safe(property.title) + '</h3>' +
-      image +
-      '<p><strong>Location:</strong> ' + safe(property.town) + ', ' + safe(property.region) + '</p>' +
-      '<p><strong>Type:</strong> ' + safe(property.property_type) + '</p>' +
-      '<p><strong>Rent:</strong> GH₵' + Number(property.rent_amount).toLocaleString() + ' / ' + safe(property.rent_period) + '</p>' +
-      '<p><strong>Advance:</strong> ' + safe(property.advance_month) + ' month(s)</p>' +
-      '<p><strong>Listing status:</strong> ' + statusBadge(property.status) + '</p>' +
-      '<p class="small">Your listing is ' + (property.status === "approved" ? "visible to the public." : property.status === "pending" ? "waiting for admin review." : "not currently visible to the public.") + '</p>';
-
+async function loadMyProperties(){
+  if(!currentUser){message("landlordMessage","Please log in to see your properties.");return}
+  const container=document.getElementById("myPropertyList");
+  container.innerHTML="";message("landlordMessage","Loading your properties...");
+  const {data,error}=await db.from("properties").select("*").eq("owner_id",currentUser.id).order("created_at",{ascending:false});
+  if(error){message("landlordMessage","Could not load your properties: "+error.message);return}
+  const properties=data||[];
+  document.getElementById("totalCount").textContent=properties.length;
+  document.getElementById("approvedCount").textContent=properties.filter(p=>p.status==="approved").length;
+  document.getElementById("pendingCount").textContent=properties.filter(p=>p.status==="pending").length;
+  document.getElementById("rejectedCount").textContent=properties.filter(p=>p.status==="rejected").length;
+  if(!properties.length){message("landlordMessage","You have not submitted any properties with this account yet.");return}
+  message("landlordMessage","You have "+properties.length+" property listing(s).");
+  properties.forEach(property=>{
+    const card=document.createElement("div");card.className="admin-card";
+    const image=property.image_url?'<img src="'+safe(property.image_url)+'" alt="Property photograph" style="width:100%;max-width:280px;border-radius:8px">':"";
+    card.innerHTML='<h3>'+safe(property.title)+'</h3>'+image+
+      '<p><strong>Location:</strong> '+safe(property.town)+', '+safe(property.region)+'</p>'+
+      '<p><strong>Type:</strong> '+safe(property.property_type)+'</p>'+
+      '<p><strong>Rent:</strong> GH₵'+Number(property.rent_amount).toLocaleString()+' / '+safe(property.rent_period)+'</p>'+
+      '<p><strong>Advance:</strong> '+safe(property.advance_month)+' month(s)</p>'+
+      '<p><strong>Listing status:</strong> '+statusBadge(property.status)+'</p>';
     container.appendChild(card);
   });
 }
 
-async function loadAdminProperties() {
-  if (!isAdmin || !currentUser) {
-    message("adminMessage","You do not have admin access.");
-    return;
-  }
-
+async function loadAdminProperties(){
+  if(!isAdmin||!currentUser){message("adminMessage","You do not have admin access.");return}
   message("adminMessage","Loading property submissions...");
-  const container = document.getElementById("adminProperties");
-  container.innerHTML = "";
-
-  const {data,error} = await db.from("properties")
-    .select("*").order("created_at",{ascending:false});
-
-  if (error) {
-    message("adminMessage","Could not load submissions: " + error.message);
-    return;
-  }
-
-  if (!data || data.length === 0) {
-    message("adminMessage","No property submissions found.");
-    return;
-  }
-
-  const pending = data.filter(p => p.status === "pending").length;
-  message("adminMessage",data.length + " total submissions. " + pending + " awaiting approval.");
-
-  data.forEach(property => {
-    const card = document.createElement("div");
-    card.className = "admin-card";
-    const image = property.image_url
-      ? '<img src="' + safe(property.image_url) + '" alt="Property photograph" style="width:100%;max-width:300px;border-radius:8px">'
-      : "";
-
-    card.innerHTML =
-      '<h3>' + safe(property.title) + '</h3>' +
-      image +
-      '<p><strong>Location:</strong> ' + safe(property.town) + ', ' + safe(property.region) + '</p>' +
-      '<p><strong>Rent:</strong> GH₵' + Number(property.rent_amount).toLocaleString() + ' / ' + safe(property.rent_period) + '</p>' +
-      '<p><strong>Contact:</strong> ' + safe(property.contact_phone) + '</p>' +
-      '<p><strong>Status:</strong> ' + statusBadge(property.status) + '</p>' +
-      '<p>' + safe(property.description || "") + '</p>' +
-      '<div class="actions">' +
-      '<button class="success" data-action="approved">Approve</button>' +
-      '<button class="danger" data-action="rejected">Reject</button>' +
-      '</div>';
-
-    card.querySelectorAll("button").forEach(button => {
-      button.addEventListener("click",() => updatePropertyStatus(property.id,button.dataset.action));
-    });
-
+  const container=document.getElementById("adminProperties");container.innerHTML="";
+  const {data,error}=await db.from("properties").select("*").order("created_at",{ascending:false});
+  if(error){message("adminMessage","Could not load submissions: "+error.message);return}
+  if(!data||!data.length){message("adminMessage","No property submissions found.");return}
+  message("adminMessage",data.length+" total submissions. "+data.filter(p=>p.status==="pending").length+" awaiting approval.");
+  data.forEach(property=>{
+    const card=document.createElement("div");card.className="admin-card";
+    const image=property.image_url?'<img src="'+safe(property.image_url)+'" alt="Property photograph" style="width:100%;max-width:300px;border-radius:8px">':"";
+    card.innerHTML='<h3>'+safe(property.title)+'</h3>'+image+
+      '<p><strong>Location:</strong> '+safe(property.town)+', '+safe(property.region)+'</p>'+
+      '<p><strong>Rent:</strong> GH₵'+Number(property.rent_amount).toLocaleString()+' / '+safe(property.rent_period)+'</p>'+
+      '<p><strong>Contact:</strong> '+safe(property.contact_phone)+'</p>'+
+      '<p><strong>Status:</strong> '+statusBadge(property.status)+'</p>'+
+      '<p>'+safe(property.description||"")+'</p>'+
+      '<div class="actions"><button class="success" data-action="approved">Approve</button><button class="danger" data-action="rejected">Reject</button></div>';
+    card.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>updatePropertyStatus(property.id,button.dataset.action)));
     container.appendChild(card);
   });
 }
 
-async function updatePropertyStatus(propertyId,newStatus) {
-  if (!isAdmin || !currentUser) {
-    alert("Admin access required.");
-    return;
-  }
-
-  if (!confirm("Are you sure you want to " + (newStatus === "approved" ? "approve" : "reject") + " this property?")) return;
-
-  const {data,error} = await db.from("properties")
-    .update({status:newStatus})
-    .eq("id",propertyId)
-    .select("id");
-
-  if (error) {
-    alert("Update failed: " + error.message);
-    return;
-  }
-
-  if (!data || data.length === 0) {
-    alert("No property was updated. Please check admin permissions.");
-    return;
-  }
-
-  alert("Property " + (newStatus === "approved" ? "approved" : "rejected") + " successfully.");
-  await loadAdminProperties();
-  await loadProperties();
-  await loadMyProperties();
+async function updatePropertyStatus(propertyId,newStatus){
+  if(!isAdmin||!currentUser){alert("Admin access required.");return}
+  if(!confirm("Are you sure you want to "+(newStatus==="approved"?"approve":"reject")+" this property?"))return;
+  const {data,error}=await db.from("properties").update({status:newStatus}).eq("id",propertyId).select("id");
+  if(error){alert("Update failed: "+error.message);return}
+  if(!data||!data.length){alert("No property was updated. Please check admin permissions.");return}
+  alert("Property "+(newStatus==="approved"?"approved":"rejected")+" successfully.");
+  await loadAdminProperties();await loadProperties();await loadMyProperties();
 }
 
-async function initializeApp() {
+async function initializeApp(){
   await refreshAccount();
   await loadProperties();
 }
-
-db.auth.onAuthStateChange((_event,session) => {
-  currentUser = session?.user || null;
-  setTimeout(async () => {
-    await refreshAccount();
-  },0);
+db.auth.onAuthStateChange(()=>{
+  setTimeout(()=>refreshAccount(),0);
 });
-
 initializeApp();
 </script>
 </body>
