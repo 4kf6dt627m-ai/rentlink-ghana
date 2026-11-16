@@ -5,6 +5,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ROOFLINK | Ghana Property Rentals</title>
+
+<meta name="theme-color" content="#10243a">
+<meta name="description" content="Find houses and connect with landlords across Ghana.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RoofLink">
+<link rel="manifest" href="./manifest.webmanifest">
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--dark:#10243a;--blue:#174d78;--gold:#e9ad35;--light:#f4f7fa;--red:#c43d3d;--green:#16834b}
@@ -823,10 +831,21 @@ async function initializeApp(){
   await refreshAccount();
   await loadProperties();
 }
+
 db.auth.onAuthStateChange(()=>{
   setTimeout(()=>refreshAccount(),0);
 });
+
 initializeApp();
+
+/* Register the RoofLink service worker for PWA support */
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("./sw.js").catch(error=>{
+      console.error("RoofLink service worker registration failed:",error);
+    });
+  });
+}
 </script>
 </body>
 </html>
