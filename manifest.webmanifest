@@ -1,0 +1,26 @@
+
+{
+  "name": "RoofLink - Ghana Property Rentals",
+  "short_name": "RoofLink",
+  "description": "Find houses and connect with landlords across Ghana.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#10243a",
+  "theme_color": "#10243a",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
