@@ -75,6 +75,10 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .featured-card .property-info{background:#fffdf7}
 .verification-card{background:#f4f7fa;border:1px solid #dce3e9;border-radius:10px;padding:16px;margin:15px 0}
 .verified-badge{display:inline-block;background:#dff5e8;color:#116b3c;padding:6px 10px;border-radius:20px;font-size:12px;font-weight:bold}
+.ghana-card-panel{background:#f4f7fa;border:1px solid #dce3e9;border-radius:10px;padding:16px;margin:15px 0}
+.ghana-card-panel h3{color:var(--dark);margin-top:0}
+.consent-row{display:flex;align-items:flex-start;gap:10px;line-height:1.5;margin:12px 0}
+.consent-row input{width:auto;margin:4px 0 0}
 footer{text-align:center;background:var(--dark);color:white;padding:25px;margin-top:40px}
 @media(max-width:600px){
 .hero h1{font-size:28px}
@@ -138,10 +142,26 @@ nav{justify-content:center}
 <h2>My ROOFLINK Account</h2>
 <div id="accountStatus" class="status">You are not logged in.</div>
 
+<div id="ghanaCardPanel" class="ghana-card-panel hidden">
+<h3>Ghana Card Account Registration</h3>
+<div id="ghanaCardStatus" class="status">Checking your Ghana Card registration...</div>
+<div id="ghanaCardForm" class="hidden">
+<p>Enter your Ghana Card number to complete your ROOFLINK account registration. Your number is sent to the secure ROOFLINK server for encryption before storage. Do not upload a photograph of your card.</p>
+<label>Ghana Card number</label>
+<input id="ghanaCardNumber" type="text" autocomplete="off" placeholder="GHA-000000000-0">
+<label class="consent-row">
+<input id="ghanaCardConsent" type="checkbox">
+<span>I consent to ROOFLINK collecting and storing my Ghana Card number in encrypted form for account identity and fraud-prevention purposes. I understand that submitting the number does not itself mean my identity has been verified.</span>
+</label>
+<button id="saveGhanaCardButton" class="gold" onclick="saveGhanaCard()">Submit Ghana Card</button>
+<p class="small">Your Ghana Card number is not saved in your browser. Only the encrypted record is stored by the server. Please review ROOFLINK's privacy arrangements before submitting sensitive personal information.</p>
+</div>
+</div>
+
 <div id="verificationPanel" class="verification-card hidden">
 <h3>Landlord / Agent Identity Verification</h3>
 <div id="verificationStatus"></div>
-<p class="small">Your Ghana Card will be checked directly by the ROOFLINK admin team. Do not upload or send your Ghana Card number or photograph through this website.</p>
+<p class="small">Your Ghana Card will be checked directly by the ROOFLINK admin team. Submitting your Ghana Card number above does not automatically verify your identity.</p>
 <button id="requestVerificationButton" class="gold hidden" onclick="requestVerification()">Request Verification</button>
 </div>
 
@@ -248,7 +268,7 @@ nav{justify-content:center}
 
 <hr>
 <h2>Landlord & Agent Verification</h2>
-<p class="small">Check the person's Ghana Card directly before approving. Do not collect or store Ghana Card photographs or numbers.</p>
+<p class="small">Check the person's Ghana Card directly before approving. Do not collect or store Ghana Card photographs or numbers in this dashboard.</p>
 <button class="primary" onclick="loadAdminVerifications()">Refresh Verification Requests</button>
 <div id="verificationQueueMessage" class="status">Verification requests will appear here.</div>
 <div id="verificationQueue"></div>
@@ -282,6 +302,8 @@ const MOMO_NAME="Felix Fiifi Walter";
 
 let currentUser=null,currentProfile=null,isAdmin=false;
 let activePayment=null;
+let ghanaCardSubmitted=false;
+let ghanaCardCheckError=false;
 
 function message(id,text){document.getElementById(id).textContent=text}
 function safe(value){
@@ -302,10 +324,68 @@ return '<span class="status-badge '+(known==="confirmed"?"approved":known==="dec
 }
 function featuredActive(property){return property.featured_until&&new Date(property.featured_until)>new Date()}
 
+async function checkGhanaCardStatus(){
+if(!currentUser){ghanaCardSubmitted=false;return false}
+ghanaCardCheckError=false;
+try{
+const {data,error}=await db.functions.invoke("smart-action",{body:{action:"status"}});
+if(error)throw error;
+ghanaCardSubmitted=data?.hasRecord===true;
+return ghanaCardSubmitted;
+}catch(error){
+console.error("Ghana Card status check failed:",error);
+ghanaCardSubmitted=false;
+ghanaCardCheckError=true;
+return false;
+}
+}
+
+function updateGhanaCardUI(){
+const panel=document.getElementById("ghanaCardPanel");
+const form=document.getElementById("ghanaCardForm");
+if(!currentUser){
+panel.classList.add("hidden");
+return;
+}
+panel.classList.remove("hidden");
+if(ghanaCardSubmitted){
+message("ghanaCardStatus","✓ Ghana Card registration received. Your number is stored as an encrypted record. This does not mean your identity verification has been approved.");
+form.classList.add("hidden");
+}else if(ghanaCardCheckError){
+message("ghanaCardStatus","We could not check your Ghana Card registration. Please refresh your account and try again. Account services remain locked until the status can be confirmed.");
+form.classList.add("hidden");
+}else{
+message("ghanaCardStatus","Ghana Card registration is required to complete your ROOFLINK account.");
+form.classList.remove("hidden");
+}
+}
+
+async function requireGhanaCard(){
+if(!currentUser){
+alert("Please log in first.");
+showSection("account");
+return false;
+}
+if(ghanaCardCheckError){
+await checkGhanaCardStatus();
+updateGhanaCardUI();
+}
+if(!ghanaCardSubmitted){
+alert("Please complete your Ghana Card registration in My Account first.");
+showSection("account");
+return false;
+}
+return true;
+}
+
 function showSection(sectionId){
 ["browse","propertyDetails","account","upload","landlord","admin","enquiries","myEnquiries","payment"].forEach(id=>document.getElementById(id).classList.add("hidden"));
 if(sectionId==="admin"&&!isAdmin){alert("Admin access is not available for this account.");return}
 if(["landlord","upload","enquiries","myEnquiries","payment"].includes(sectionId)&&!currentUser){alert("Please log in first.");showSection("account");return}
+if(["landlord","upload","enquiries","myEnquiries","payment"].includes(sectionId)&&currentUser&&!ghanaCardSubmitted){
+alert("Please complete your Ghana Card registration in My Account before using this feature.");
+showSection("account");return;
+}
 document.getElementById(sectionId).classList.remove("hidden");
 if(sectionId==="browse")loadProperties();
 if(sectionId==="landlord")loadMyProperties();
@@ -328,6 +408,7 @@ const panel=document.getElementById("verificationPanel");
 const requestButton=document.getElementById("requestVerificationButton");
 panel.classList.add("hidden");
 requestButton.classList.add("hidden");
+updateGhanaCardUI();
 
 if(!loggedIn){
 message("accountStatus","You are not logged in.");
@@ -351,8 +432,8 @@ if(role==="landlord"||role==="agent"){
 panel.classList.remove("hidden");
 if(verification==="verified"){
 document.getElementById("verificationStatus").innerHTML='<p><span class="verified-badge">✓ VERIFIED '+safe(role.toUpperCase())+'</span></p><p>Your identity has been approved. You can upload properties.</p>';
-document.getElementById("uploadForm").classList.remove("hidden");
-message("uploadNotice","Your account is verified. You can submit properties for admin approval.");
+document.getElementById("uploadForm").classList.toggle("hidden",!ghanaCardSubmitted);
+message("uploadNotice",ghanaCardSubmitted?"Your account is verified. You can submit properties for admin approval.":"Complete Ghana Card registration before uploading properties.");
 }else if(verification==="pending"){
 document.getElementById("verificationStatus").innerHTML='<p><span class="status-badge pending">VERIFICATION PENDING</span></p><p>Your request is awaiting admin review. Property uploads are disabled until approval.</p>';
 document.getElementById("uploadForm").classList.add("hidden");
@@ -373,38 +454,101 @@ message("uploadNotice","Please request identity verification first.");
 
 async function refreshAccount(){
 const {data:{user}}=await db.auth.getUser();
-currentUser=user||null;currentProfile=null;isAdmin=false;
+currentUser=user||null;
+currentProfile=null;
+isAdmin=false;
+ghanaCardSubmitted=false;
+ghanaCardCheckError=false;
+
 if(currentUser){
 const {data:profile,error:profileError}=await db.from("profiles").select("id,full_name,role,identity_verification_status,identity_verified_at").eq("id",currentUser.id).maybeSingle();
 if(profileError)console.error("Profile loading error:",profileError);
 currentProfile=profile||{full_name:currentUser.user_metadata?.full_name||"",role:currentUser.user_metadata?.role||"tenant",identity_verification_status:null};
+
 const {data:adminRecord,error:adminError}=await db.from("rentlink_admins").select("user_id").eq("user_id",currentUser.id).maybeSingle();
 isAdmin=!adminError&&!!adminRecord;
+
+await checkGhanaCardStatus();
 }
 updateAccountUI();
 }
 
+async function saveGhanaCard(){
+if(!currentUser){alert("Please log in first.");showSection("account");return}
+const cardInput=document.getElementById("ghanaCardNumber");
+const consent=document.getElementById("ghanaCardConsent").checked;
+const cardNumber=cardInput.value.trim().toUpperCase();
+
+if(!/^GHA-\d{9}-\d$/.test(cardNumber)){
+alert("Please enter your Ghana Card number in this format: GHA-000000000-0");
+return;
+}
+if(!consent){
+alert("Please read and accept the consent statement before submitting.");
+return;
+}
+if(!confirm("Submit your Ghana Card number for encrypted storage by ROOFLINK?"))return;
+
+const button=document.getElementById("saveGhanaCardButton");
+button.disabled=true;
+button.textContent="Submitting...";
+message("ghanaCardStatus","Submitting your Ghana Card record...");
+
+try{
+const {data,error}=await db.functions.invoke("smart-action",{
+body:{action:"save",cardNumber:cardNumber,consent:true}
+});
+if(error)throw error;
+if(!data||data.message!=="Ghana Card record saved")throw new Error(data?.message||"The server did not confirm the submission.");
+
+cardInput.value="";
+document.getElementById("ghanaCardConsent").checked=false;
+await checkGhanaCardStatus();
+
+if(!ghanaCardSubmitted)throw new Error("The record was submitted, but its status could not be confirmed. Please refresh your account.");
+
+updateAccountUI();
+alert("Your Ghana Card record has been submitted and stored in encrypted form. This is not identity verification approval.");
+}catch(error){
+cardInput.value="";
+document.getElementById("ghanaCardConsent").checked=false;
+message("ghanaCardStatus","Submission could not be confirmed. Please try again. "+(error.message||""));
+alert("Ghana Card submission failed: "+(error.message||"Please try again."));
+}finally{
+button.disabled=false;
+button.textContent="Submit Ghana Card";
+}
+}
+
 async function requestVerification(){
 if(!currentUser){alert("Please log in first.");return}
+if(!await requireGhanaCard())return;
 const role=currentProfile?.role;
 if(role!=="landlord"&&role!=="agent"){alert("Only landlord and agent accounts can request verification.");return}
 const currentStatus=currentProfile?.identity_verification_status;
 if(currentStatus==="verified"||currentStatus==="pending"){alert("Your verification is already "+currentStatus+".");return}
-if(!confirm("Submit your identity verification request? The ROOFLINK admin team will arrange to check your Ghana Card directly. Do not upload your card or send its number."))return;
+if(!confirm("Submit your identity verification request? The ROOFLINK admin team will arrange to check your Ghana Card directly."))return;
+
 const button=document.getElementById("requestVerificationButton");
-button.disabled=true;button.textContent="Submitting...";
+button.disabled=true;
+button.textContent="Submitting...";
 try{
 const {data:existing,error:checkError}=await db.from("identity_verification_requests").select("id,status").eq("user_id",currentUser.id).eq("status","pending").limit(1);
 if(checkError)throw checkError;
-if(existing&&existing.length){alert("You already have a pending verification request.");}
-else{
+if(existing&&existing.length){
+alert("You already have a pending verification request.");
+}else{
 const {error}=await db.from("identity_verification_requests").insert({user_id:currentUser.id,status:"pending"});
 if(error)throw error;
 alert("Your verification request has been submitted.");
 }
 await refreshAccount();
-}catch(error){alert("Could not submit verification request: "+error.message)}
-finally{button.disabled=false;button.textContent="Request Verification"}
+}catch(error){
+alert("Could not submit verification request: "+error.message);
+}finally{
+button.disabled=false;
+button.textContent="Request Verification";
+}
 }
 
 async function loadAdminVerifications(){
@@ -417,10 +561,13 @@ const {data:requests,error}=await db.from("identity_verification_requests").sele
 if(error)throw error;
 if(!requests||!requests.length){message("verificationQueueMessage","No verification requests found.");return}
 message("verificationQueueMessage",requests.length+" verification request(s) found.");
+
 requests.forEach(request=>{
-const card=document.createElement("div");card.className="admin-card";
+const card=document.createElement("div");
+card.className="admin-card";
 const badge=request.status==="verified"?'<span class="status-badge approved">VERIFIED</span>':request.status==="rejected"?'<span class="status-badge rejected">REJECTED</span>':'<span class="status-badge pending">PENDING</span>';
 card.innerHTML='<h3>Identity Verification Request</h3><p><strong>User ID:</strong> '+safe(request.user_id)+'</p><p><strong>Submitted:</strong> '+safe(request.submitted_at?new Date(request.submitted_at).toLocaleString():"Unavailable")+'</p><p><strong>Status:</strong> '+badge+'</p>'+(request.admin_note?'<p><strong>Admin note:</strong> '+safe(request.admin_note)+'</p>':"")+(request.status==="pending"?'<label>Admin note (optional)</label><textarea class="verification-note" placeholder="Add a review note"></textarea><div class="actions"><button class="success approve-verification">Approve Identity</button><button class="danger reject-verification">Reject Request</button></div>':"");
+
 const approve=card.querySelector(".approve-verification");
 const reject=card.querySelector(".reject-verification");
 const note=card.querySelector(".verification-note");
@@ -428,14 +575,17 @@ if(approve)approve.addEventListener("click",()=>reviewIdentityRequest(request.id
 if(reject)reject.addEventListener("click",()=>reviewIdentityRequest(request.id,"rejected",note.value,reject));
 container.appendChild(card);
 });
-}catch(error){message("verificationQueueMessage","Could not load requests: "+error.message)}
+}catch(error){
+message("verificationQueueMessage","Could not load requests: "+error.message);
+}
 }
 
 async function reviewIdentityRequest(requestId,newStatus,note,button){
 if(!isAdmin||!currentUser){alert("Admin access required.");return}
 const action=newStatus==="verified"?"approve":"reject";
 if(!confirm("Are you sure you want to "+action+" this identity request? Only approve after checking the person's Ghana Card directly."))return;
-button.disabled=true;button.textContent="Processing...";
+button.disabled=true;
+button.textContent="Processing...";
 try{
 const {data,error}=await db.from("identity_verification_requests").update({status:newStatus,reviewed_at:new Date().toISOString(),reviewed_by:currentUser.id,admin_note:note.trim()||null}).eq("id",requestId).eq("status","pending").select("id");
 if(error)throw error;
@@ -443,7 +593,11 @@ if(!data||!data.length)throw new Error("This request has already been reviewed o
 alert("Identity request "+action+"d successfully.");
 await loadAdminVerifications();
 await refreshAccount();
-}catch(error){alert("Could not update verification: "+error.message);button.disabled=false;button.textContent=action==="approve"?"Approve Identity":"Reject Request"}
+}catch(error){
+alert("Could not update verification: "+error.message);
+button.disabled=false;
+button.textContent=action==="approve"?"Approve Identity":"Reject Request";
+}
 }
 
 async function registerAccount(){
@@ -454,23 +608,38 @@ const password=document.getElementById("regPassword").value;
 const role=document.getElementById("regRole").value;
 if(!fullName||!phone||!email||!password){alert("Please complete all registration fields.");return}
 if(password.length<6){alert("Your password must be at least 6 characters.");return}
-const {error}=await db.auth.signUp({email,password,options:{data:{full_name:fullName,phone,role}}});
+
+const {error}=await db.auth.signUp({
+email,
+password,
+options:{data:{full_name:fullName,phone,role}}
+});
 if(error){alert(error.message);return}
-alert("Account created. Check your email and tap the confirmation link before logging in.");
+
+alert("Account created. Check your email and tap the confirmation link before logging in. You will submit your Ghana Card after confirming your email and logging in.");
 document.getElementById("loginEmail").value=email;
 document.getElementById("registerBox").classList.add("hidden");
 }
+
 async function loginAccount(){
 const email=document.getElementById("loginEmail").value.trim();
 const password=document.getElementById("loginPassword").value;
 const {error}=await db.auth.signInWithPassword({email,password});
 if(error){alert(error.message);return}
-await refreshAccount();showSection("account");
+await refreshAccount();
+showSection("account");
 }
+
 async function logoutAccount(){
 const {error}=await db.auth.signOut();
 if(error){alert(error.message);return}
-currentUser=null;currentProfile=null;isAdmin=false;updateAccountUI();showSection("browse");
+currentUser=null;
+currentProfile=null;
+isAdmin=false;
+ghanaCardSubmitted=false;
+ghanaCardCheckError=false;
+updateAccountUI();
+showSection("browse");
 alert("You have logged out.");
 }
 
@@ -479,95 +648,150 @@ const whatsapp=String(property.contact_phone||"").replace(/\D/g,"");
 const image=property.image_url?'<img class="detail-image" src="'+safe(property.image_url)+'" alt="Property photograph">':'<div class="detail-image" style="height:220px;display:grid;place-items:center">No property photo available</div>';
 const whatsappButton=whatsapp?'<a target="_blank" rel="noopener" href="https://wa.me/'+whatsapp+'?text='+encodeURIComponent("Hello, I am interested in your property listed on ROOFLINK: "+property.title)+'"><button class="success">Contact Landlord on WhatsApp</button></a>':"";
 const phoneButton=property.contact_phone?'<a href="tel:'+safe(property.contact_phone)+'"><button class="primary">Call Landlord</button></a>':"";
-document.getElementById("detailContent").innerHTML='<h2>'+safe(property.title)+'</h2>'+image+'<p class="price">GH₵'+Number(property.rent_amount).toLocaleString()+' / '+safe(property.rent_period)+'</p><p><strong>'+safe(property.property_type)+'</strong></p><div class="detail-grid"><div class="detail-item"><strong>Region</strong>'+safe(property.region)+'</div><div class="detail-item"><strong>Town</strong>'+safe(property.town)+'</div><div class="detail-item"><strong>Area</strong>'+safe(property.area||"Not provided")+'</div><div class="detail-item"><strong>Bedrooms</strong>'+safe(property.bedrooms??0)+'</div><div class="detail-item"><strong>Bathrooms</strong>'+safe(property.bathrooms??0)+'</div><div class="detail-item"><strong>Advance required</strong>'+safe(property.advance_month??0)+' month(s)</div></div><h3>About this property</h3><p class="detail-description">'+safe(property.description||"No description provided.")+'</p><h3>Interested in this property?</h3><div class="detail-contact">'+whatsappButton+phoneButton+'</div><div class="enquiry-box"><h3>Request a Viewing</h3><p class="small">You must be logged in to submit an enquiry. Tenants pay GH₵50 only after the landlord confirms the viewing.</p><label>Your full name</label><input id="enquiryName" placeholder="Enter your full name" value="'+safe(currentProfile?.full_name||currentUser?.user_metadata?.full_name||"")+'"><label>Your phone number</label><input id="enquiryPhone" type="tel" placeholder="Enter your phone number"><label>Your message</label><textarea id="enquiryMessage" placeholder="Hello, I am interested in this property. I would like to arrange a viewing."></textarea><button id="enquirySubmitButton" class="gold" onclick="submitEnquiry(\''+safe(property.id)+'\')">Send Viewing Request</button><div id="enquiryStatus" class="status hidden"></div></div>';
+
+document.getElementById("detailContent").innerHTML='<h2>'+safe(property.title)+'</h2>'+image+'<p class="price">GH₵'+Number(property.rent_amount).toLocaleString()+' / '+safe(property.rent_period)+'</p><p><strong>'+safe(property.property_type)+'</strong></p><div class="detail-grid"><div class="detail-item"><strong>Region</strong>'+safe(property.region)+'</div><div class="detail-item"><strong>Town</strong>'+safe(property.town)+'</div><div class="detail-item"><strong>Area</strong>'+safe(property.area||"Not provided")+'</div><div class="detail-item"><strong>Bedrooms</strong>'+safe(property.bedrooms??0)+'</div><div class="detail-item"><strong>Bathrooms</strong>'+safe(property.bathrooms??0)+'</div><div class="detail-item"><strong>Advance required</strong>'+safe(property.advance_month??0)+' month(s)</div></div><h3>About this property</h3><p class="detail-description">'+safe(property.description||"No description provided.")+'</p><h3>Interested in this property?</h3><div class="detail-contact">'+whatsappButton+phoneButton+'</div><div class="enquiry-box"><h3>Request a Viewing</h3><p class="small">You must be logged in and have completed Ghana Card registration to submit an enquiry. Tenants pay GH₵50 only after the landlord confirms the viewing.</p><label>Your full name</label><input id="enquiryName" placeholder="Enter your full name" value="'+safe(currentProfile?.full_name||currentUser?.user_metadata?.full_name||"")+'"><label>Your phone number</label><input id="enquiryPhone" type="tel" placeholder="Enter your phone number"><label>Your message</label><textarea id="enquiryMessage" placeholder="Hello, I am interested in this property. I would like to arrange a viewing."></textarea><button id="enquirySubmitButton" class="gold" onclick="submitEnquiry(\''+safe(property.id)+'\')">Send Viewing Request</button><div id="enquiryStatus" class="status hidden"></div></div>';
+
 showSection("propertyDetails");
 }
 
 async function submitEnquiry(propertyId){
-if(!currentUser){alert("Please log in before sending a viewing request.");showSection("account");return}
+if(!await requireGhanaCard())return;
 const tenantName=document.getElementById("enquiryName").value.trim();
 const tenantPhone=document.getElementById("enquiryPhone").value.trim();
 const enquiryMessage=document.getElementById("enquiryMessage").value.trim();
 const statusBox=document.getElementById("enquiryStatus");
 const button=document.getElementById("enquirySubmitButton");
+
 if(!tenantName||!tenantPhone||!enquiryMessage){alert("Please enter your name, phone number and message.");return}
 if(tenantPhone.length<7){alert("Please enter a valid phone number.");return}
-button.disabled=true;button.textContent="Sending...";
-statusBox.classList.remove("hidden");statusBox.textContent="Sending your viewing request...";
+
+button.disabled=true;
+button.textContent="Sending...";
+statusBox.classList.remove("hidden");
+statusBox.textContent="Sending your viewing request...";
+
 try{
 const {error}=await db.from("property_enquiries").insert({property_id:propertyId,tenant_id:currentUser.id,tenant_name:tenantName,tenant_phone:tenantPhone,message:enquiryMessage});
 if(error)throw error;
 statusBox.textContent="Your viewing request has been sent successfully! The landlord can now see your enquiry.";
-document.getElementById("enquiryMessage").value="";button.textContent="Request Sent";
-}catch(error){statusBox.textContent="Could not send your request: "+error.message;button.disabled=false;button.textContent="Send Viewing Request"}
+document.getElementById("enquiryMessage").value="";
+button.textContent="Request Sent";
+}catch(error){
+statusBox.textContent="Could not send your request: "+error.message;
+button.disabled=false;
+button.textContent="Send Viewing Request";
+}
 }
 
 async function loadLandlordEnquiries(){
 if(!currentUser){message("enquiriesMessage","Please log in first.");return}
-const list=document.getElementById("enquiriesList");list.innerHTML="";message("enquiriesMessage","Loading your viewing requests...");
+if(!await requireGhanaCard())return;
+const list=document.getElementById("enquiriesList");
+list.innerHTML="";
+message("enquiriesMessage","Loading your viewing requests...");
+
 try{
 const {data:properties,error:propertyError}=await db.from("properties").select("id,title,town,region").eq("owner_id",currentUser.id);
 if(propertyError)throw propertyError;
 if(!properties||!properties.length){message("enquiriesMessage","No properties were found under this account.");return}
-const propertyIds=properties.map(p=>p.id);const propertyMap={};properties.forEach(p=>propertyMap[p.id]=p);
+
+const propertyIds=properties.map(p=>p.id);
+const propertyMap={};
+properties.forEach(p=>propertyMap[p.id]=p);
+
 const {data:enquiries,error}=await db.from("property_enquiries").select("*").in("property_id",propertyIds).order("created_at",{ascending:false});
 if(error)throw error;
 if(!enquiries||!enquiries.length){message("enquiriesMessage","No viewing requests have been received for your properties yet.");return}
+
 message("enquiriesMessage",enquiries.length+" viewing request(s) received.");
 enquiries.forEach(enquiry=>{
-const property=propertyMap[enquiry.property_id]||{};const phone=String(enquiry.tenant_phone||"").replace(/\D/g,"");
-const card=document.createElement("div");card.className="enquiry-card";
+const property=propertyMap[enquiry.property_id]||{};
+const phone=String(enquiry.tenant_phone||"").replace(/\D/g,"");
+const card=document.createElement("div");
+card.className="enquiry-card";
 card.innerHTML='<h3>'+safe(property.title||"Your property")+'</h3><p class="small">'+safe(property.town||"")+', '+safe(property.region||"")+'</p><p><strong>Tenant:</strong> '+safe(enquiry.tenant_name||"Not provided")+'</p><p><strong>Phone:</strong> '+safe(enquiry.tenant_phone||"Not provided")+'</p><p><strong>Received:</strong> '+safe(enquiry.created_at?new Date(enquiry.created_at).toLocaleString():"Date unavailable")+'</p><p><strong>Viewing status:</strong> '+viewingBadge(enquiry.viewing_status)+'</p><p><strong>Message:</strong></p><div class="enquiry-message">'+safe(enquiry.message||"No message provided.")+'</div><div class="actions">'+(phone?'<a href="tel:'+phone+'"><button class="primary">Call Tenant</button></a>':"")+(phone?'<a target="_blank" rel="noopener" href="https://wa.me/'+phone+'"><button class="success">WhatsApp Tenant</button></a>':"")+(enquiry.viewing_status!=="confirmed"?'<button class="gold confirm-viewing">Confirm Viewing</button>':"")+'</div>';
+
 const confirmButton=card.querySelector(".confirm-viewing");
 if(confirmButton)confirmButton.addEventListener("click",()=>confirmViewing(enquiry.id,confirmButton));
 list.appendChild(card);
 });
-}catch(error){message("enquiriesMessage","Could not load enquiries: "+error.message)}
+}catch(error){
+message("enquiriesMessage","Could not load enquiries: "+error.message);
+}
 }
 
 async function confirmViewing(enquiryId,button){
-if(!currentUser){alert("Please log in first.");return}
+if(!await requireGhanaCard())return;
 if(!confirm("Confirm that you have agreed to arrange a viewing with this tenant?"))return;
-button.disabled=true;button.textContent="Confirming...";
+button.disabled=true;
+button.textContent="Confirming...";
+
 const {data,error}=await db.from("property_enquiries").update({viewing_status:"confirmed"}).eq("id",enquiryId).select("id");
-if(error){alert("Could not confirm viewing: "+error.message);button.disabled=false;button.textContent="Confirm Viewing";return}
-if(!data||!data.length){alert("No enquiry was updated. Please check your landlord permissions.");button.disabled=false;button.textContent="Confirm Viewing";return}
+if(error){
+alert("Could not confirm viewing: "+error.message);
+button.disabled=false;
+button.textContent="Confirm Viewing";
+return;
+}
+if(!data||!data.length){
+alert("No enquiry was updated. Please check your landlord permissions.");
+button.disabled=false;
+button.textContent="Confirm Viewing";
+return;
+}
 alert("Viewing confirmed. The tenant can now pay the GH₵50 viewing fee.");
 loadLandlordEnquiries();
 }
 
 async function loadMyEnquiries(){
 if(!currentUser){message("myEnquiriesMessage","Please log in first.");return}
-const list=document.getElementById("myEnquiriesList");list.innerHTML="";message("myEnquiriesMessage","Loading your viewing requests...");
+if(!await requireGhanaCard())return;
+const list=document.getElementById("myEnquiriesList");
+list.innerHTML="";
+message("myEnquiriesMessage","Loading your viewing requests...");
+
 try{
 const {data:enquiries,error}=await db.from("property_enquiries").select("*").eq("tenant_id",currentUser.id).order("created_at",{ascending:false});
 if(error)throw error;
 if(!enquiries||!enquiries.length){message("myEnquiriesMessage","You have not sent any viewing requests yet.");return}
+
 const ids=[...new Set(enquiries.map(e=>e.property_id))];
 const {data:properties,error:propertyError}=await db.from("properties").select("id,title,town,region,rent_amount,rent_period,image_url").in("id",ids);
 if(propertyError)throw propertyError;
-const propertyMap={};(properties||[]).forEach(p=>propertyMap[p.id]=p);
+
+const propertyMap={};
+(properties||[]).forEach(p=>propertyMap[p.id]=p);
 const enquiryIds=enquiries.map(e=>e.id);
 const {data:payments,error:paymentError}=await db.from("rentlink_payments").select("*").in("enquiry_id",enquiryIds);
 if(paymentError)throw paymentError;
-const paymentMap={};(payments||[]).forEach(p=>paymentMap[p.enquiry_id]=p);
+
+const paymentMap={};
+(payments||[]).forEach(p=>paymentMap[p.enquiry_id]=p);
 message("myEnquiriesMessage",enquiries.length+" viewing request(s).");
+
 enquiries.forEach(enquiry=>{
-const property=propertyMap[enquiry.property_id]||{};const payment=paymentMap[enquiry.id];const card=document.createElement("div");card.className="enquiry-card";
+const property=propertyMap[enquiry.property_id]||{};
+const payment=paymentMap[enquiry.id];
+const card=document.createElement("div");
+card.className="enquiry-card";
 let paymentHtml="";
 if(payment?.status==="verified")paymentHtml='<p><strong>Viewing payment:</strong> '+paymentBadge("verified")+' — Paid</p>';
 else if(payment?.status==="pending")paymentHtml='<p><strong>Viewing payment:</strong> '+paymentBadge("pending")+' — Awaiting admin verification.</p>';
 else if(payment?.status==="rejected")paymentHtml='<p><strong>Viewing payment:</strong> '+paymentBadge("rejected")+' — Payment could not be verified. Please check your transaction details and submit again.</p>';
+
 card.innerHTML='<h3>'+safe(property.title||"Property")+'</h3><p>'+safe(property.town||"")+', '+safe(property.region||"")+'</p><p><strong>Rent:</strong> '+money(property.rent_amount)+' / '+safe(property.rent_period||"")+'</p><p><strong>Request date:</strong> '+safe(enquiry.created_at?new Date(enquiry.created_at).toLocaleString():"Unavailable")+'</p><p><strong>Viewing status:</strong> '+viewingBadge(enquiry.viewing_status)+'</p>'+paymentHtml+(enquiry.viewing_status==="confirmed"&&payment?.status!=="verified"&&payment?.status!=="pending"?'<button class="gold pay-viewing">Pay GH₵50 Viewing Fee</button>':"");
+
 const payButton=card.querySelector(".pay-viewing");
 if(payButton)payButton.addEventListener("click",()=>startPayment("viewing_fee",property.id,enquiry.id));
 list.appendChild(card);
 });
-}catch(error){message("myEnquiriesMessage","Could not load your requests: "+error.message)}
+}catch(error){
+message("myEnquiriesMessage","Could not load your requests: "+error.message);
+}
 }
 
 async function startPayment(type,propertyId,enquiryId=null){
-if(!currentUser){alert("Please log in first.");showSection("account");return}
+if(!await requireGhanaCard())return;
 const amount=type==="featured_listing"?100:50;
 activePayment={type,propertyId,enquiryId,amount};
 message("paymentDescription","Payment amount: "+money(amount)+(type==="featured_listing"?" — Featured property listing for 7 days.":" — Viewing fee after landlord confirmation."));
@@ -580,31 +804,43 @@ showSection("payment");
 }
 
 async function submitPayment(){
+if(!await requireGhanaCard())return;
 if(!currentUser||!activePayment){alert("Please select a valid payment first.");return}
 const phone=document.getElementById("paymentPhone").value.trim();
 const reference=document.getElementById("paymentReference").value.trim();
 if(!phone||phone.replace(/\D/g,"").length<9){alert("Enter the phone number used to send the MoMo payment.");return}
 if(!reference){alert("Enter the MTN MoMo transaction reference.");return}
-const button=document.getElementById("submitPaymentButton");const statusBox=document.getElementById("paymentMessage");
-button.disabled=true;button.textContent="Submitting...";
-statusBox.classList.remove("hidden");statusBox.textContent="Submitting your payment record...";
+
+const button=document.getElementById("submitPaymentButton");
+const statusBox=document.getElementById("paymentMessage");
+button.disabled=true;
+button.textContent="Submitting...";
+statusBox.classList.remove("hidden");
+statusBox.textContent="Submitting your payment record...";
+
 try{
 const record={payer_id:currentUser.id,payment_type:activePayment.type,property_id:activePayment.propertyId,enquiry_id:activePayment.enquiryId,amount:activePayment.amount,payment_phone:phone,payment_reference:reference,status:"pending"};
 const {error}=await db.from("rentlink_payments").insert(record);
 if(error)throw error;
 statusBox.textContent="Your payment details have been submitted. Your payment is awaiting admin verification. Please keep your MoMo transaction message.";
 button.textContent="Payment Submitted";
-}catch(error){statusBox.textContent="Payment submission failed: "+error.message;button.disabled=false;button.textContent="I Have Sent the Payment"}
+}catch(error){
+statusBox.textContent="Payment submission failed: "+error.message;
+button.disabled=false;
+button.textContent="I Have Sent the Payment";
+}
 }
 
 async function submitProperty(){
-if(!currentUser){alert("Please log in first.");return}
+if(!await requireGhanaCard())return;
 const role=currentProfile?.role||currentUser.user_metadata?.role||"tenant";
 if(role!=="landlord"&&role!=="agent"){alert("Only landlord and agent accounts can submit properties.");return}
 if(currentProfile?.identity_verification_status!=="verified"){
 alert("Your identity must be verified by ROOFLINK admin before uploading properties.");
-showSection("account");return;
+showSection("account");
+return;
 }
+
 const title=document.getElementById("propertyTitle").value.trim();
 const description=document.getElementById("propertyDescription").value.trim();
 const region=document.getElementById("propertyRegion").value;
@@ -618,70 +854,123 @@ const rent_period=document.getElementById("rentPeriod").value;
 const advance_month=Number(document.getElementById("advanceMonth").value||0);
 const contact_phone=document.getElementById("contactPhone").value.trim();
 const file=document.getElementById("propertyImage").files[0];
+
 if(!title||!region||!town||!rent_amount||!contact_phone||!file){alert("Please complete the required fields and choose a property photo.");return}
 if(!file.type.startsWith("image/")||file.size>8*1024*1024){alert("Choose an image smaller than 8 MB.");return}
-const button=document.querySelector("#uploadForm button");button.disabled=true;button.textContent="Uploading...";
+
+const button=document.querySelector("#uploadForm button");
+button.disabled=true;
+button.textContent="Uploading...";
 let imagePath=null;
+
 try{
 const extension=file.name.split(".").pop().toLowerCase();
 imagePath=currentUser.id+"/"+crypto.randomUUID()+"."+extension;
 const {error:uploadError}=await db.storage.from("property-images").upload(imagePath,file,{contentType:file.type,upsert:false});
 if(uploadError)throw uploadError;
+
 const {data:imageData}=db.storage.from("property-images").getPublicUrl(imagePath);
 const {error:insertError}=await db.from("properties").insert({owner_id:currentUser.id,title,description,region,town,area,property_type,bedrooms,bathrooms,rent_amount,rent_period,advance_month,contact_phone,image_url:imageData.publicUrl,status:"pending"});
 if(insertError)throw insertError;
+
 alert("Property submitted successfully. It will appear publicly after admin approval.");
 document.getElementById("uploadForm").querySelectorAll("input,textarea").forEach(el=>el.value="");
-}catch(error){alert("Property submission failed: "+error.message)}
-finally{button.disabled=false;button.textContent="Submit Property for Approval"}
+}catch(error){
+alert("Property submission failed: "+error.message);
+}finally{
+button.disabled=false;
+button.textContent="Submit Property for Approval";
+}
 }
 
 async function loadProperties(){
-const list=document.getElementById("propertyList");const featuredList=document.getElementById("featuredPropertyList");
-list.innerHTML="";featuredList.innerHTML="";
-message("propertyMessage","Loading approved properties...");message("featuredMessage","Loading featured properties...");
+const list=document.getElementById("propertyList");
+const featuredList=document.getElementById("featuredPropertyList");
+list.innerHTML="";
+featuredList.innerHTML="";
+message("propertyMessage","Loading approved properties...");
+message("featuredMessage","Loading featured properties...");
+
 let query=db.from("properties").select("*").eq("status","approved").order("created_at",{ascending:false});
-const region=document.getElementById("searchRegion").value;const town=document.getElementById("searchTown").value.trim();
+const region=document.getElementById("searchRegion").value;
+const town=document.getElementById("searchTown").value.trim();
 if(region)query=query.eq("region",region);
 if(town)query=query.ilike("town","%"+town+"%");
+
 const {data,error}=await query;
-if(error){message("propertyMessage","Could not load properties: "+error.message);message("featuredMessage","Could not load featured properties.");return}
-if(!data||data.length===0){message("propertyMessage","No approved properties found yet. Please check again soon.");message("featuredMessage","No featured properties right now. Check back soon.");return}
-const featured=data.filter(property=>featuredActive(property));const regular=data.filter(property=>!featuredActive(property));
+if(error){
+message("propertyMessage","Could not load properties: "+error.message);
+message("featuredMessage","Could not load featured properties.");
+return;
+}
+if(!data||data.length===0){
+message("propertyMessage","No approved properties found yet. Please check again soon.");
+message("featuredMessage","No featured properties right now. Check back soon.");
+return;
+}
+
+const featured=data.filter(property=>featuredActive(property));
+const regular=data.filter(property=>!featuredActive(property));
 featured.sort((a,b)=>new Date(b.featured_until)-new Date(a.featured_until));
+
 function createPropertyCard(property,isFeatured){
-const card=document.createElement("article");card.className="property-card"+(isFeatured?" featured-card":"");
+const card=document.createElement("article");
+card.className="property-card"+(isFeatured?" featured-card":"");
 const image=property.image_url?'<img src="'+safe(property.image_url)+'" alt="Property photograph">':'<div style="height:190px;display:grid;place-items:center">No photo available</div>';
 card.innerHTML=image+'<div class="property-info">'+(isFeatured?'<p><span class="featured-label">★ FEATURED</span></p>':"")+'<h3>'+safe(property.title)+'</h3><p>'+safe(property.property_type)+' · '+safe(property.town)+', '+safe(property.region)+'</p><p>'+safe(property.bedrooms)+' bedrooms · '+safe(property.bathrooms)+' bathrooms</p><p class="price">GH₵'+Number(property.rent_amount).toLocaleString()+' / '+safe(property.rent_period)+'</p><button class="primary view-details">View Details</button></div>';
-card.querySelector(".view-details").addEventListener("click",()=>showPropertyDetails(property));return card;
+card.querySelector(".view-details").addEventListener("click",()=>showPropertyDetails(property));
+return card;
 }
-if(featured.length===0)message("featuredMessage","No featured properties right now. Check back soon.");
-else{message("featuredMessage",featured.length+" featured property/properties available.");featured.forEach(p=>featuredList.appendChild(createPropertyCard(p,true)))}
-if(regular.length===0)message("propertyMessage","No ordinary listings found. Check the Featured Properties section above.");
-else{message("propertyMessage",regular.length+" ordinary approved property/properties found.");regular.forEach(p=>list.appendChild(createPropertyCard(p,false)))}
+
+if(featured.length===0){
+message("featuredMessage","No featured properties right now. Check back soon.");
+}else{
+message("featuredMessage",featured.length+" featured property/properties available.");
+featured.forEach(p=>featuredList.appendChild(createPropertyCard(p,true)));
+}
+
+if(regular.length===0){
+message("propertyMessage","No ordinary listings found. Check the Featured Properties section above.");
+}else{
+message("propertyMessage",regular.length+" ordinary approved property/properties found.");
+regular.forEach(p=>list.appendChild(createPropertyCard(p,false)));
+}
 }
 
 async function loadMyProperties(){
 if(!currentUser){message("landlordMessage","Please log in to see your properties.");return}
-const container=document.getElementById("myPropertyList");container.innerHTML="";message("landlordMessage","Loading your properties...");
+if(!await requireGhanaCard())return;
+const container=document.getElementById("myPropertyList");
+container.innerHTML="";
+message("landlordMessage","Loading your properties...");
+
 const {data,error}=await db.from("properties").select("*").eq("owner_id",currentUser.id).order("created_at",{ascending:false});
 if(error){message("landlordMessage","Could not load your properties: "+error.message);return}
+
 const properties=data||[];
 document.getElementById("totalCount").textContent=properties.length;
 document.getElementById("approvedCount").textContent=properties.filter(p=>p.status==="approved").length;
 document.getElementById("pendingCount").textContent=properties.filter(p=>p.status==="pending").length;
 document.getElementById("rejectedCount").textContent=properties.filter(p=>p.status==="rejected").length;
+
 if(!properties.length){message("landlordMessage","You have not submitted any properties with this account yet.");return}
 message("landlordMessage","You have "+properties.length+" property listing(s).");
+
 const {data:payments}=await db.from("rentlink_payments").select("*").eq("payer_id",currentUser.id).eq("payment_type","featured_listing");
-(properties).forEach(property=>{
-const card=document.createElement("div");card.className="admin-card";
+
+properties.forEach(property=>{
+const card=document.createElement("div");
+card.className="admin-card";
 const image=property.image_url?'<img src="'+safe(property.image_url)+'" alt="Property photograph" style="width:100%;max-width:280px;border-radius:8px">':"";
 const propertyPayments=(payments||[]).filter(p=>p.property_id===property.id);
-const pending=propertyPayments.some(p=>p.status==="pending");const active=featuredActive(property);
+const pending=propertyPayments.some(p=>p.status==="pending");
+const active=featuredActive(property);
 let featureText=active?"<p><span class='status-badge approved'>FEATURED UNTIL "+safe(new Date(property.featured_until).toLocaleDateString())+"</span></p>":pending?"<p><span class='status-badge pending'>Promotion payment awaiting verification</span></p>":"";
+
 card.innerHTML='<h3>'+safe(property.title)+'</h3>'+image+'<p><strong>Location:</strong> '+safe(property.town)+', '+safe(property.region)+'</p><p><strong>Type:</strong> '+safe(property.property_type)+'</p><p><strong>Rent:</strong> '+money(property.rent_amount)+' / '+safe(property.rent_period)+'</p><p><strong>Advance:</strong> '+safe(property.advance_month)+' month(s)</p><p><strong>Listing status:</strong> '+statusBadge(property.status)+'</p>'+featureText+(property.status==="approved"&&!active&&!pending?'<button class="gold promote-button">Promote for GH₵100 — 7 days</button>':"");
-const promoteButton=card.querySelector(".promote-button");if(promoteButton)promoteButton.addEventListener("click",()=>startPayment("featured_listing",property.id));
+
+const promoteButton=card.querySelector(".promote-button");
+if(promoteButton)promoteButton.addEventListener("click",()=>startPayment("featured_listing",property.id));
 container.appendChild(card);
 });
 }
@@ -689,13 +978,17 @@ container.appendChild(card);
 async function loadAdminProperties(){
 if(!isAdmin||!currentUser){message("adminMessage","You do not have admin access.");return}
 message("adminMessage","Loading property submissions...");
-const container=document.getElementById("adminProperties");container.innerHTML="";
+const container=document.getElementById("adminProperties");
+container.innerHTML="";
+
 const {data,error}=await db.from("properties").select("*").order("created_at",{ascending:false});
 if(error){message("adminMessage","Could not load submissions: "+error.message);return}
 if(!data||!data.length){message("adminMessage","No property submissions found.");return}
+
 message("adminMessage",data.length+" total submissions. "+data.filter(p=>p.status==="pending").length+" awaiting approval.");
 data.forEach(property=>{
-const card=document.createElement("div");card.className="admin-card";
+const card=document.createElement("div");
+card.className="admin-card";
 const image=property.image_url?'<img src="'+safe(property.image_url)+'" alt="Property photograph" style="width:100%;max-width:300px;border-radius:8px">':"";
 card.innerHTML='<h3>'+safe(property.title)+'</h3>'+image+'<p><strong>Location:</strong> '+safe(property.town)+', '+safe(property.region)+'</p><p><strong>Rent:</strong> '+money(property.rent_amount)+' / '+safe(property.rent_period)+'</p><p><strong>Contact:</strong> '+safe(property.contact_phone)+'</p><p><strong>Status:</strong> '+statusBadge(property.status)+'</p><p>'+safe(property.description||"")+'</p><div class="actions"><button class="success" data-action="approved">Approve</button><button class="danger" data-action="rejected">Reject</button></div>';
 card.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>updatePropertyStatus(property.id,button.dataset.action)));
@@ -706,75 +999,131 @@ container.appendChild(card);
 async function updatePropertyStatus(propertyId,newStatus){
 if(!isAdmin||!currentUser){alert("Admin access required.");return}
 if(!confirm("Are you sure you want to "+(newStatus==="approved"?"approve":"reject")+" this property?"))return;
+
 const {data,error}=await db.from("properties").update({status:newStatus}).eq("id",propertyId).select("id");
 if(error){alert("Update failed: "+error.message);return}
 if(!data||!data.length){alert("No property was updated. Please check admin permissions.");return}
+
 alert("Property "+(newStatus==="approved"?"approved":"rejected")+" successfully.");
-await loadAdminProperties();await loadProperties();await loadMyProperties();
+await loadAdminProperties();
+await loadProperties();
+await loadMyProperties();
 }
 
 async function loadAdminPayments(){
 if(!isAdmin||!currentUser){message("paymentsMessage","Admin access required.");return}
-const container=document.getElementById("adminPayments");container.innerHTML="";message("paymentsMessage","Loading payment records...");
+const container=document.getElementById("adminPayments");
+container.innerHTML="";
+message("paymentsMessage","Loading payment records...");
+
 try{
 const {data:payments,error}=await db.from("rentlink_payments").select("*").order("created_at",{ascending:false});
 if(error)throw error;
-const rows=payments||[];const verified=rows.filter(p=>p.status==="verified");const pending=rows.filter(p=>p.status==="pending");
+
+const rows=payments||[];
+const verified=rows.filter(p=>p.status==="verified");
+const pending=rows.filter(p=>p.status==="pending");
 const total=verified.reduce((sum,p)=>sum+Number(p.amount||0),0);
+
 document.getElementById("revenueTotal").textContent=money(total);
 document.getElementById("paymentPendingCount").textContent=pending.length;
 document.getElementById("paymentVerifiedCount").textContent=verified.length;
+
 if(!rows.length){message("paymentsMessage","No payments have been submitted yet.");return}
 message("paymentsMessage",rows.length+" payment record(s). Verify each transaction only after checking your MTN MoMo account.");
-const propertyIds=[...new Set(rows.map(p=>p.property_id))];
-const {data:properties}=await db.from("properties").select("id,title").in("id",propertyIds);
-const propertyMap={};(properties||[]).forEach(p=>propertyMap[p.id]=p);
+
+const propertyIds=[...new Set(rows.map(p=>p.property_id).filter(Boolean))];
+let properties=[];
+if(propertyIds.length){
+const result=await db.from("properties").select("id,title").in("id",propertyIds);
+properties=result.data||[];
+}
+const propertyMap={};
+properties.forEach(p=>propertyMap[p.id]=p);
+
 rows.forEach(payment=>{
-const property=propertyMap[payment.property_id]||{};const card=document.createElement("div");card.className="admin-card";
+const property=propertyMap[payment.property_id]||{};
+const card=document.createElement("div");
+card.className="admin-card";
 card.innerHTML='<h3>'+safe(payment.payment_type==="featured_listing"?"Featured property listing":"Tenant viewing fee")+'</h3><p><strong>Property:</strong> '+safe(property.title||payment.property_id)+'</p><p><strong>Amount:</strong> '+money(payment.amount)+'</p><p><strong>MoMo phone:</strong> '+safe(payment.payment_phone)+'</p><p><strong>Transaction reference:</strong> '+safe(payment.payment_reference)+'</p><p><strong>Payer account ID:</strong> '+safe(payment.payer_id)+'</p><p><strong>Submitted:</strong> '+safe(payment.created_at?new Date(payment.created_at).toLocaleString():"Unavailable")+'</p><p><strong>Status:</strong> '+paymentBadge(payment.status)+'</p>'+(payment.status==="pending"?'<div class="actions"><button class="success verify-payment">Verify Payment</button><button class="danger reject-payment">Reject Payment</button></div>':"");
-const verifyButton=card.querySelector(".verify-payment");const rejectButton=card.querySelector(".reject-payment");
+
+const verifyButton=card.querySelector(".verify-payment");
+const rejectButton=card.querySelector(".reject-payment");
 if(verifyButton)verifyButton.addEventListener("click",()=>verifyPayment(payment,verifyButton));
 if(rejectButton)rejectButton.addEventListener("click",()=>rejectPayment(payment,rejectButton));
 container.appendChild(card);
 });
-}catch(error){message("paymentsMessage","Could not load payments: "+error.message)}
+}catch(error){
+message("paymentsMessage","Could not load payments: "+error.message);
+}
 }
 
 async function verifyPayment(payment,button){
 if(!isAdmin||!currentUser){alert("Admin access required.");return}
 const instructions="Before verifying, check your actual MTN MoMo transaction history.\n\nAmount: "+money(payment.amount)+"\nPhone: "+payment.payment_phone+"\nReference: "+payment.payment_reference+"\n\nHave you confirmed that the money was received?";
 if(!confirm(instructions))return;
-button.disabled=true;button.textContent="Verifying...";
+
+button.disabled=true;
+button.textContent="Verifying...";
 try{
 const {data,error}=await db.from("rentlink_payments").update({status:"verified",verified_at:new Date().toISOString(),verified_by:currentUser.id}).eq("id",payment.id).eq("status","pending").select("id");
 if(error)throw error;
 if(!data||!data.length)throw new Error("This payment was already updated or could not be found.");
+
 if(payment.payment_type==="featured_listing"){
 const until=new Date(Date.now()+7*24*60*60*1000).toISOString();
 const {error:featureError}=await db.from("properties").update({featured_until:until}).eq("id",payment.property_id);
 if(featureError)alert("Payment verified, but the featured listing could not be activated: "+featureError.message+". Please check the property manually.");
 else alert("Payment verified. The property has been featured for 7 days.");
-}else alert("Viewing fee payment verified successfully.");
-await loadAdminPayments();await loadProperties();await loadMyProperties();await loadMyEnquiries();
-}catch(error){alert("Could not verify payment: "+error.message);button.disabled=false;button.textContent="Verify Payment"}
+}else{
+alert("Viewing fee payment verified successfully.");
+}
+
+await loadAdminPayments();
+await loadProperties();
+await loadMyProperties();
+await loadMyEnquiries();
+}catch(error){
+alert("Could not verify payment: "+error.message);
+button.disabled=false;
+button.textContent="Verify Payment";
+}
 }
 
 async function rejectPayment(payment,button){
 if(!isAdmin||!currentUser){alert("Admin access required.");return}
 if(!confirm("Reject this payment? Check the transaction carefully before rejecting."))return;
-button.disabled=true;button.textContent="Rejecting...";
+
+button.disabled=true;
+button.textContent="Rejecting...";
 const {data,error}=await db.from("rentlink_payments").update({status:"rejected",verified_at:new Date().toISOString(),verified_by:currentUser.id}).eq("id",payment.id).eq("status","pending").select("id");
-if(error){alert("Could not reject payment: "+error.message);button.disabled=false;button.textContent="Reject Payment";return}
-if(!data||!data.length){alert("This payment was already updated.");return}
+
+if(error){
+alert("Could not reject payment: "+error.message);
+button.disabled=false;
+button.textContent="Reject Payment";
+return;
+}
+if(!data||!data.length){
+alert("This payment was already updated.");
+return;
+}
+
 alert("Payment rejected.");
-await loadAdminPayments();await loadMyProperties();await loadMyEnquiries();
+await loadAdminPayments();
+await loadMyProperties();
+await loadMyEnquiries();
 }
 
 async function initializeApp(){
 await refreshAccount();
 await loadProperties();
 }
-db.auth.onAuthStateChange(()=>{setTimeout(()=>refreshAccount(),0)});
+
+db.auth.onAuthStateChange(()=>{
+setTimeout(()=>refreshAccount(),0);
+});
+
 initializeApp();
 
 if("serviceWorker" in navigator){
