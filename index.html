@@ -73,8 +73,6 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .featured-label{display:inline-block;background:#e9ad35;color:#182333;padding:6px 11px;border-radius:20px;font-size:11px;font-weight:bold}
 .featured-card{border:2px solid #e9ad35}
 .featured-card .property-info{background:#fffdf7}
-.verification-card{background:#f4f7fa;border:1px solid #dce3e9;border-radius:10px;padding:16px;margin:15px 0}
-.verified-badge{display:inline-block;background:#dff5e8;color:#116b3c;padding:6px 10px;border-radius:20px;font-size:12px;font-weight:bold}
 .ghana-card-panel{background:#f4f7fa;border:1px solid #dce3e9;border-radius:10px;padding:16px;margin:15px 0}
 .ghana-card-panel h3{color:var(--dark);margin-top:0}
 .consent-row{display:flex;align-items:flex-start;gap:10px;line-height:1.5;margin:12px 0}
@@ -154,15 +152,8 @@ nav{justify-content:center}
 <span>I consent to ROOFLINK collecting and storing my Ghana Card number in encrypted form for account identity and fraud-prevention purposes. I understand that submitting the number does not itself mean my identity has been verified.</span>
 </label>
 <button id="saveGhanaCardButton" class="gold" onclick="saveGhanaCard()">Submit Ghana Card</button>
-<p class="small">Your Ghana Card number is not saved in your browser. Only the encrypted record is stored by the server. Please review ROOFLINK's privacy arrangements before submitting sensitive personal information.</p>
+<p class="small">Your Ghana Card number is not saved in your browser. Only the encrypted record is stored by the server.</p>
 </div>
-</div>
-
-<div id="verificationPanel" class="verification-card hidden">
-<h3>Landlord / Agent Identity Verification</h3>
-<div id="verificationStatus"></div>
-<p class="small">Your Ghana Card will be checked directly by the ROOFLINK admin team. Submitting your Ghana Card number above does not automatically verify your identity.</p>
-<button id="requestVerificationButton" class="gold hidden" onclick="requestVerification()">Request Verification</button>
 </div>
 
 <div id="registerBox">
@@ -267,13 +258,6 @@ nav{justify-content:center}
 <div id="adminProperties"></div>
 
 <hr>
-<h2>Landlord & Agent Verification</h2>
-<p class="small">Check the person's Ghana Card directly before approving. Do not collect or store Ghana Card photographs or numbers in this dashboard.</p>
-<button class="primary" onclick="loadAdminVerifications()">Refresh Verification Requests</button>
-<div id="verificationQueueMessage" class="status">Verification requests will appear here.</div>
-<div id="verificationQueue"></div>
-
-<hr>
 <h2>Revenue & Payments</h2>
 <p class="small">Check submitted MTN MoMo transactions. Verify only after checking the actual transaction in your MTN MoMo account.</p>
 <button class="primary" onclick="loadAdminPayments()">Refresh Payments</button>
@@ -349,10 +333,10 @@ return;
 }
 panel.classList.remove("hidden");
 if(ghanaCardSubmitted){
-message("ghanaCardStatus","✓ Ghana Card registration received. Your number is stored as an encrypted record. This does not mean your identity verification has been approved.");
+message("ghanaCardStatus","✓ Ghana Card registration received. Your number is stored as an encrypted record.");
 form.classList.add("hidden");
 }else if(ghanaCardCheckError){
-message("ghanaCardStatus","We could not check your Ghana Card registration. Please refresh your account and try again. Account services remain locked until the status can be confirmed.");
+message("ghanaCardStatus","We could not check your Ghana Card registration. Please refresh your account and try again.");
 form.classList.add("hidden");
 }else{
 message("ghanaCardStatus","Ghana Card registration is required to complete your ROOFLINK account.");
@@ -389,7 +373,7 @@ showSection("account");return;
 document.getElementById(sectionId).classList.remove("hidden");
 if(sectionId==="browse")loadProperties();
 if(sectionId==="landlord")loadMyProperties();
-if(sectionId==="admin"){loadAdminProperties();loadAdminPayments();loadAdminVerifications()}
+if(sectionId==="admin"){loadAdminProperties();loadAdminPayments()}
 if(sectionId==="enquiries")loadLandlordEnquiries();
 if(sectionId==="myEnquiries")loadMyEnquiries();
 }
@@ -403,11 +387,6 @@ document.getElementById("adminNav").classList.toggle("hidden",!isAdmin);
 document.getElementById("myPropertiesNav").classList.toggle("hidden",!loggedIn);
 document.getElementById("enquiriesNav").classList.toggle("hidden",!loggedIn);
 document.getElementById("myEnquiriesNav").classList.toggle("hidden",!loggedIn);
-
-const panel=document.getElementById("verificationPanel");
-const requestButton=document.getElementById("requestVerificationButton");
-panel.classList.add("hidden");
-requestButton.classList.add("hidden");
 updateGhanaCardUI();
 
 if(!loggedIn){
@@ -419,7 +398,6 @@ return;
 
 const name=currentProfile?.full_name||currentUser.email;
 const role=currentProfile?.role||"tenant";
-const verification=currentProfile?.identity_verification_status||"not_submitted";
 message("accountStatus","Logged in as "+name+" ("+role+")"+(isAdmin?" — Admin access confirmed.":""));
 
 if(role==="tenant"){
@@ -429,25 +407,12 @@ return;
 }
 
 if(role==="landlord"||role==="agent"){
-panel.classList.remove("hidden");
-if(verification==="verified"){
-document.getElementById("verificationStatus").innerHTML='<p><span class="verified-badge">✓ VERIFIED '+safe(role.toUpperCase())+'</span></p><p>Your identity has been approved. You can upload properties.</p>';
-document.getElementById("uploadForm").classList.toggle("hidden",!ghanaCardSubmitted);
-message("uploadNotice",ghanaCardSubmitted?"Your account is verified. You can submit properties for admin approval.":"Complete Ghana Card registration before uploading properties.");
-}else if(verification==="pending"){
-document.getElementById("verificationStatus").innerHTML='<p><span class="status-badge pending">VERIFICATION PENDING</span></p><p>Your request is awaiting admin review. Property uploads are disabled until approval.</p>';
-document.getElementById("uploadForm").classList.add("hidden");
-message("uploadNotice","Your identity verification is pending.");
-}else if(verification==="rejected"){
-document.getElementById("verificationStatus").innerHTML='<p><span class="status-badge rejected">VERIFICATION REJECTED</span></p><p>Your request was not approved. You may submit another request after resolving the issue.</p>';
-requestButton.classList.remove("hidden");
-document.getElementById("uploadForm").classList.add("hidden");
-message("uploadNotice","Verification is required before you can upload properties.");
+if(ghanaCardSubmitted){
+document.getElementById("uploadForm").classList.remove("hidden");
+message("uploadNotice","✓ Ghana Card received. You can now upload properties for admin approval.");
 }else{
-document.getElementById("verificationStatus").innerHTML="<p>You must complete identity verification before uploading properties.</p>";
-requestButton.classList.remove("hidden");
 document.getElementById("uploadForm").classList.add("hidden");
-message("uploadNotice","Please request identity verification first.");
+message("uploadNotice","Complete Ghana Card registration before uploading properties.");
 }
 }
 }
@@ -461,9 +426,9 @@ ghanaCardSubmitted=false;
 ghanaCardCheckError=false;
 
 if(currentUser){
-const {data:profile,error:profileError}=await db.from("profiles").select("id,full_name,role,identity_verification_status,identity_verified_at").eq("id",currentUser.id).maybeSingle();
+const {data:profile,error:profileError}=await db.from("profiles").select("id,full_name,role").eq("id",currentUser.id).maybeSingle();
 if(profileError)console.error("Profile loading error:",profileError);
-currentProfile=profile||{full_name:currentUser.user_metadata?.full_name||"",role:currentUser.user_metadata?.role||"tenant",identity_verification_status:null};
+currentProfile=profile||{full_name:currentUser.user_metadata?.full_name||"",role:currentUser.user_metadata?.role||"tenant"};
 
 const {data:adminRecord,error:adminError}=await db.from("rentlink_admins").select("user_id").eq("user_id",currentUser.id).maybeSingle();
 isAdmin=!adminError&&!!adminRecord;
@@ -508,7 +473,7 @@ await checkGhanaCardStatus();
 if(!ghanaCardSubmitted)throw new Error("The record was submitted, but its status could not be confirmed. Please refresh your account.");
 
 updateAccountUI();
-alert("Your Ghana Card record has been submitted and stored in encrypted form. This is not identity verification approval.");
+alert("Your Ghana Card record has been submitted successfully. You can now use your ROOFLINK account features.");
 }catch(error){
 cardInput.value="";
 document.getElementById("ghanaCardConsent").checked=false;
@@ -517,86 +482,6 @@ alert("Ghana Card submission failed: "+(error.message||"Please try again."));
 }finally{
 button.disabled=false;
 button.textContent="Submit Ghana Card";
-}
-}
-
-async function requestVerification(){
-if(!currentUser){alert("Please log in first.");return}
-if(!await requireGhanaCard())return;
-const role=currentProfile?.role;
-if(role!=="landlord"&&role!=="agent"){alert("Only landlord and agent accounts can request verification.");return}
-const currentStatus=currentProfile?.identity_verification_status;
-if(currentStatus==="verified"||currentStatus==="pending"){alert("Your verification is already "+currentStatus+".");return}
-if(!confirm("Submit your identity verification request? The ROOFLINK admin team will arrange to check your Ghana Card directly."))return;
-
-const button=document.getElementById("requestVerificationButton");
-button.disabled=true;
-button.textContent="Submitting...";
-try{
-const {data:existing,error:checkError}=await db.from("identity_verification_requests").select("id,status").eq("user_id",currentUser.id).eq("status","pending").limit(1);
-if(checkError)throw checkError;
-if(existing&&existing.length){
-alert("You already have a pending verification request.");
-}else{
-const {error}=await db.from("identity_verification_requests").insert({user_id:currentUser.id,status:"pending"});
-if(error)throw error;
-alert("Your verification request has been submitted.");
-}
-await refreshAccount();
-}catch(error){
-alert("Could not submit verification request: "+error.message);
-}finally{
-button.disabled=false;
-button.textContent="Request Verification";
-}
-}
-
-async function loadAdminVerifications(){
-if(!isAdmin||!currentUser){message("verificationQueueMessage","Admin access required.");return}
-const container=document.getElementById("verificationQueue");
-container.innerHTML="";
-message("verificationQueueMessage","Loading verification requests...");
-try{
-const {data:requests,error}=await db.from("identity_verification_requests").select("*").order("submitted_at",{ascending:false});
-if(error)throw error;
-if(!requests||!requests.length){message("verificationQueueMessage","No verification requests found.");return}
-message("verificationQueueMessage",requests.length+" verification request(s) found.");
-
-requests.forEach(request=>{
-const card=document.createElement("div");
-card.className="admin-card";
-const badge=request.status==="verified"?'<span class="status-badge approved">VERIFIED</span>':request.status==="rejected"?'<span class="status-badge rejected">REJECTED</span>':'<span class="status-badge pending">PENDING</span>';
-card.innerHTML='<h3>Identity Verification Request</h3><p><strong>User ID:</strong> '+safe(request.user_id)+'</p><p><strong>Submitted:</strong> '+safe(request.submitted_at?new Date(request.submitted_at).toLocaleString():"Unavailable")+'</p><p><strong>Status:</strong> '+badge+'</p>'+(request.admin_note?'<p><strong>Admin note:</strong> '+safe(request.admin_note)+'</p>':"")+(request.status==="pending"?'<label>Admin note (optional)</label><textarea class="verification-note" placeholder="Add a review note"></textarea><div class="actions"><button class="success approve-verification">Approve Identity</button><button class="danger reject-verification">Reject Request</button></div>':"");
-
-const approve=card.querySelector(".approve-verification");
-const reject=card.querySelector(".reject-verification");
-const note=card.querySelector(".verification-note");
-if(approve)approve.addEventListener("click",()=>reviewIdentityRequest(request.id,"verified",note.value,approve));
-if(reject)reject.addEventListener("click",()=>reviewIdentityRequest(request.id,"rejected",note.value,reject));
-container.appendChild(card);
-});
-}catch(error){
-message("verificationQueueMessage","Could not load requests: "+error.message);
-}
-}
-
-async function reviewIdentityRequest(requestId,newStatus,note,button){
-if(!isAdmin||!currentUser){alert("Admin access required.");return}
-const action=newStatus==="verified"?"approve":"reject";
-if(!confirm("Are you sure you want to "+action+" this identity request? Only approve after checking the person's Ghana Card directly."))return;
-button.disabled=true;
-button.textContent="Processing...";
-try{
-const {data,error}=await db.from("identity_verification_requests").update({status:newStatus,reviewed_at:new Date().toISOString(),reviewed_by:currentUser.id,admin_note:note.trim()||null}).eq("id",requestId).eq("status","pending").select("id");
-if(error)throw error;
-if(!data||!data.length)throw new Error("This request has already been reviewed or could not be updated.");
-alert("Identity request "+action+"d successfully.");
-await loadAdminVerifications();
-await refreshAccount();
-}catch(error){
-alert("Could not update verification: "+error.message);
-button.disabled=false;
-button.textContent=action==="approve"?"Approve Identity":"Reject Request";
 }
 }
 
@@ -835,11 +720,6 @@ async function submitProperty(){
 if(!await requireGhanaCard())return;
 const role=currentProfile?.role||currentUser.user_metadata?.role||"tenant";
 if(role!=="landlord"&&role!=="agent"){alert("Only landlord and agent accounts can submit properties.");return}
-if(currentProfile?.identity_verification_status!=="verified"){
-alert("Your identity must be verified by ROOFLINK admin before uploading properties.");
-showSection("account");
-return;
-}
 
 const title=document.getElementById("propertyTitle").value.trim();
 const description=document.getElementById("propertyDescription").value.trim();
@@ -861,11 +741,10 @@ if(!file.type.startsWith("image/")||file.size>8*1024*1024){alert("Choose an imag
 const button=document.querySelector("#uploadForm button");
 button.disabled=true;
 button.textContent="Uploading...";
-let imagePath=null;
 
 try{
 const extension=file.name.split(".").pop().toLowerCase();
-imagePath=currentUser.id+"/"+crypto.randomUUID()+"."+extension;
+const imagePath=currentUser.id+"/"+crypto.randomUUID()+"."+extension;
 const {error:uploadError}=await db.storage.from("property-images").upload(imagePath,file,{contentType:file.type,upsert:false});
 if(uploadError)throw uploadError;
 
