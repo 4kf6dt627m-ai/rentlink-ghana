@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -85,13 +84,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:9px;margin:15px 0}
 .gallery img{width:100%;height:150px;object-fit:cover;border-radius:8px}
 footer{text-align:center;background:var(--dark);color:white;padding:25px;margin-top:40px}
-@media(max-width:600px){
-.hero h1{font-size:28px}
-header{justify-content:center;text-align:center}
-nav{justify-content:center}
-.stats{gap:6px}
-.stat{padding:10px 4px}
-}
+@media(max-width:600px){.hero h1{font-size:28px}header{justify-content:center;text-align:center}nav{justify-content:center}.stats{gap:6px}.stat{padding:10px 4px}}
 </style>
 </head>
 
@@ -119,7 +112,7 @@ nav{justify-content:center}
 
 <section id="browse" class="panel">
 <h2>Find Your Next Home</h2>
-<p class="small">Browse properties approved for public viewing.</p>
+<p class="small">Browse available and rented properties across Ghana.</p>
 <div class="featured-section">
 <div class="featured-heading"><span class="featured-label">★ FEATURED</span><h2>Featured Properties</h2></div>
 <p class="small">Promoted homes selected by ROOFLINK.</p>
@@ -146,6 +139,7 @@ nav{justify-content:center}
 <section id="account" class="panel hidden">
 <h2>My ROOFLINK Account</h2>
 <div id="accountStatus" class="status">You are not logged in.</div>
+
 <div id="ghanaCardPanel" class="ghana-card-panel hidden">
 <h3>Landlord / Agent Identity Registration</h3>
 <div id="ghanaCardStatus" class="status"></div>
@@ -175,13 +169,7 @@ nav{justify-content:center}
 <option value="agent">Property Agent</option>
 </select>
 <div id="registrationCardBox" class="hidden">
-<p class="small">Landlords and agents must submit a Ghana Card after confirming their email and logging in. The number entered here is not stored.</p>
-<label>Ghana Card number (optional at registration)</label>
-<input id="regGhanaCard" autocomplete="off" placeholder="GHA-000000000-0">
-<label class="consent-row">
-<input id="regGhanaConsent" type="checkbox">
-<span>I understand that I must submit my Ghana Card securely after email confirmation before my account can be approved.</span>
-</label>
+<p class="small">Landlords and agents must submit their Ghana Card securely after confirming their email and logging in. Your 15-day free trial starts after successful Ghana Card submission.</p>
 </div>
 <button class="primary" onclick="registerAccount()">Create Account</button>
 </div>
@@ -200,7 +188,7 @@ nav{justify-content:center}
 <div id="subscriptionSummary" class="status"></div>
 <div class="stats">
 <div class="stat"><strong id="totalCount">0</strong><span>Total listings</span></div>
-<div class="stat"><strong id="approvedCount">0</strong><span>Approved</span></div>
+<div class="stat"><strong id="approvedCount">0</strong><span>Published</span></div>
 <div class="stat"><strong id="pendingCount">0</strong><span>Pending</span></div>
 </div>
 <div class="stat" style="margin-bottom:15px"><strong id="rejectedCount">0</strong><span>Rejected listings</span></div>
@@ -267,7 +255,7 @@ nav{justify-content:center}
 <input id="propertyImage" type="file" accept="image/*" multiple onchange="previewPropertyPhotos()">
 <p class="small">Choose up to 10 photographs. Each image must be 8 MB or smaller. Select which photograph should be the cover image.</p>
 <div id="photoPreview" class="photo-preview"></div>
-<button class="gold" id="submitPropertyButton" onclick="submitProperty()">Submit Property for Approval</button>
+<button class="gold" id="submitPropertyButton" onclick="submitProperty()">Publish Property</button>
 </div>
 </section>
 
@@ -276,14 +264,14 @@ nav{justify-content:center}
 <div class="status">Admin access is checked against your existing admin membership.</div>
 
 <hr>
-<h2>Landlord & Agent Account Approvals</h2>
-<p class="small">Review identity submissions and approve eligible landlord or agent accounts. Approval starts the 30-day free trial.</p>
-<button class="primary" onclick="loadAdminAccounts()">Refresh Account Approvals</button>
+<h2>Landlord & Agent Accounts</h2>
+<p class="small">View landlord and agent registration, Ghana Card submission and trial information. No manual approval is required before publishing.</p>
+<button class="primary" onclick="loadAdminAccounts()">Refresh Accounts</button>
 <div id="adminAccountsMessage" class="status">Loading accounts...</div>
 <div id="adminAccounts"></div>
 
 <hr>
-<h2>Property Submissions</h2>
+<h2>Property Listings</h2>
 <div id="adminMessage" class="status">Checking access...</div>
 <div id="adminProperties"></div>
 
@@ -345,23 +333,18 @@ const known=status==="confirmed"?"confirmed":status==="declined"?"declined":"pen
 return '<span class="status-badge '+(known==="confirmed"?"approved":known==="declined"?"rejected":"pending")+'">'+safe(known.toUpperCase())+'</span>';
 }
 function featuredActive(property){return property.featured_until&&new Date(property.featured_until)>new Date()}
-function trialActive(){
-return currentProfile?.trial_ends_at&&new Date(currentProfile.trial_ends_at)>new Date();
-}
-function subscriptionActive(){
-return currentProfile?.subscription_status==="active"&&currentProfile?.subscription_expires_at&&new Date(currentProfile.subscription_expires_at)>new Date();
-}
-function accountCanUpload(){
-return isBusinessRole()&&currentProfile?.identity_status==="approved"&&(trialActive()||subscriptionActive());
-}
+function priorityActive(property){return property.priority_until&&new Date(property.priority_until)>new Date()}
+function videoPromotionActive(property){return property.video_promotion_until&&new Date(property.video_promotion_until)>new Date()}
+function trialActive(){return !!currentProfile?.trial_ends_at&&new Date(currentProfile.trial_ends_at)>new Date()}
+function subscriptionActive(){return currentProfile?.subscription_status==="active"&&currentProfile?.subscription_expires_at&&new Date(currentProfile.subscription_expires_at)>new Date()}
+function accountCanUpload(){return isBusinessRole()&&ghanaCardSubmitted&&(trialActive()||subscriptionActive())}
+function canListWithoutPayment(){return accountCanUpload()}
 function accountApprovalText(){
-if(!isBusinessRole())return "Tenant account";
-if(currentProfile?.identity_status==="pending")return "Your Ghana Card submission is awaiting ROOFLINK admin approval.";
-if(currentProfile?.identity_status==="rejected")return "Your identity submission was rejected. Contact ROOFLINK support.";
-if(currentProfile?.identity_status!=="approved")return "Submit your Ghana Card to begin account approval.";
-if(trialActive())return "Your 30-day free trial ends on "+new Date(currentProfile.trial_ends_at).toLocaleDateString()+".";
+if(!isBusinessRole())return "Tenant account.";
+if(!ghanaCardSubmitted)return "Submit your Ghana Card to start your individual 15-day free trial.";
+if(trialActive())return "Your individual 15-day free trial is active until "+new Date(currentProfile.trial_ends_at).toLocaleDateString()+".";
 if(subscriptionActive())return "Your subscription is active until "+new Date(currentProfile.subscription_expires_at).toLocaleDateString()+".";
-return "Your free trial has ended. Choose a subscription to upload new properties.";
+return "Your free trial has ended. Your first property listing is free if you have not used it. Additional listings cost GH₵50 each, or choose a subscription.";
 }
 
 async function checkGhanaCardStatus(){
@@ -371,6 +354,14 @@ try{
 const {data,error}=await db.functions.invoke("smart-action",{body:{action:"status"}});
 if(error)throw error;
 ghanaCardSubmitted=data?.hasRecord===true;
+if(ghanaCardSubmitted&&currentProfile&&!currentProfile.trial_started_at){
+const {data:trialData,error:trialError}=await db.rpc("start_rooflink_trial");
+if(trialError)console.error("Trial start error:",trialError);
+else if(trialData?.success){
+const {data:updated}=await db.from("profiles").select("*").eq("id",currentUser.id).maybeSingle();
+if(updated)currentProfile=updated;
+}
+}
 return ghanaCardSubmitted;
 }catch(error){
 console.error("Ghana Card status check failed:",error);
@@ -383,19 +374,16 @@ return false;
 function updateGhanaCardUI(){
 const panel=document.getElementById("ghanaCardPanel");
 const form=document.getElementById("ghanaCardForm");
-if(!currentUser||!isBusinessRole()){
-panel.classList.add("hidden");
-return;
-}
+if(!currentUser||!isBusinessRole()){panel.classList.add("hidden");return}
 panel.classList.remove("hidden");
 if(ghanaCardSubmitted){
-message("ghanaCardStatus","✓ Ghana Card submission received. It is awaiting identity review by ROOFLINK.");
+message("ghanaCardStatus","✓ Ghana Card submission received. Your individual 15-day free trial starts after successful submission. You can publish properties without waiting for manual admin approval.");
 form.classList.add("hidden");
 }else if(ghanaCardCheckError){
 message("ghanaCardStatus","We could not check your Ghana Card submission. Refresh your account and try again.");
 form.classList.add("hidden");
 }else{
-message("ghanaCardStatus","Ghana Card submission is required before your landlord or agent account can be approved.");
+message("ghanaCardStatus","Ghana Card submission is required before you can publish properties.");
 form.classList.remove("hidden");
 }
 }
@@ -403,19 +391,10 @@ form.classList.remove("hidden");
 async function requireBusinessApproval(){
 if(!currentUser){alert("Please log in first.");showSection("account");return false}
 if(!isBusinessRole()){alert("This feature is for landlord and agent accounts.");return false}
-if(!ghanaCardSubmitted){
-await checkGhanaCardStatus();
-updateGhanaCardUI();
-}
+if(!ghanaCardSubmitted){await checkGhanaCardStatus();updateGhanaCardUI()}
 if(!ghanaCardSubmitted){
 alert("Please submit your Ghana Card in My Account first.");
-showSection("account");
-return false;
-}
-if(currentProfile?.identity_status!=="approved"){
-alert("Your landlord/agent account is awaiting admin identity approval.");
-showSection("account");
-return false;
+showSection("account");return false;
 }
 return true;
 }
@@ -426,10 +405,6 @@ sections.forEach(id=>document.getElementById(id).classList.add("hidden"));
 if(sectionId==="admin"&&!isAdmin){alert("Admin access is not available for this account.");return}
 if(["landlord","upload","enquiries"].includes(sectionId)&&!currentUser){alert("Please log in first.");showSection("account");return}
 if(["landlord","upload","enquiries"].includes(sectionId)&&currentUser&&!isBusinessRole()){alert("This section is for landlord and agent accounts.");return}
-if(["landlord","upload","enquiries"].includes(sectionId)&&currentUser&&isBusinessRole()&&currentProfile?.identity_status!=="approved"){
-alert("Your landlord/agent account must be approved first.");
-showSection("account");return;
-}
 document.getElementById(sectionId).classList.remove("hidden");
 if(sectionId==="browse")loadProperties();
 if(sectionId==="landlord")loadMyProperties();
@@ -443,14 +418,14 @@ function updateUploadAccess(){
 const form=document.getElementById("uploadForm");
 if(!currentUser){form.classList.add("hidden");message("uploadNotice","Please log in with a landlord or agent account.");return}
 if(!isBusinessRole()){form.classList.add("hidden");message("uploadNotice","Tenant accounts cannot upload properties.");return}
-if(currentProfile?.identity_status!=="approved"){form.classList.add("hidden");message("uploadNotice","Your identity must be approved before uploading properties.");return}
-if(!accountCanUpload()){
-form.classList.add("hidden");
-message("uploadNotice","Your 30-day free trial has ended. Select a subscription in My Properties to upload new listings.");
+if(!ghanaCardSubmitted){form.classList.add("hidden");message("uploadNotice","Submit your Ghana Card in My Account first.");return}
+if(accountCanUpload()){
+form.classList.remove("hidden");
+message("uploadNotice",trialActive()?"Your individual 15-day free trial is active. Your listings can be published without a listing fee during your trial.":"Your subscription is active. You can publish properties without paying a separate listing fee.");
 return;
 }
 form.classList.remove("hidden");
-message("uploadNotice",trialActive()?"Your 30-day free trial is active. You can upload properties.":"Your subscription is active. You can upload properties.");
+message("uploadNotice","Your trial has ended. Your first listing is free if unused. Every additional listing costs GH₵50. You can also subscribe for GH₵50/month as a landlord or GH₵100/month as an agent.");
 }
 
 function updateAccountUI(){
@@ -464,11 +439,9 @@ document.getElementById("enquiriesNav").classList.toggle("hidden",!loggedIn||!is
 document.getElementById("myEnquiriesNav").classList.toggle("hidden",!loggedIn||role()!=="tenant");
 document.getElementById("uploadNav").classList.toggle("hidden",!loggedIn||!isBusinessRole());
 updateGhanaCardUI();
-
 if(!loggedIn){
 message("accountStatus","You are not logged in.");
-updateUploadAccess();
-return;
+updateUploadAccess();return;
 }
 const name=currentProfile?.full_name||currentUser.email;
 message("accountStatus","Logged in as "+name+" ("+role()+")"+(isAdmin?" — Admin access confirmed.":"")+"\n"+accountApprovalText());
@@ -517,8 +490,10 @@ cardInput.value="";
 document.getElementById("ghanaCardConsent").checked=false;
 await checkGhanaCardStatus();
 if(!ghanaCardSubmitted)throw new Error("Submission was not confirmed. Refresh and check again.");
+const {data:profile,error:profileError}=await db.from("profiles").select("*").eq("id",currentUser.id).maybeSingle();
+if(!profileError&&profile)currentProfile=profile;
 updateAccountUI();
-alert("Ghana Card received. Your identity is now awaiting ROOFLINK admin approval.");
+alert("Ghana Card received. Your individual 15-day free trial has started. You can now publish properties without waiting for manual approval.");
 }catch(error){
 cardInput.value="";
 document.getElementById("ghanaCardConsent").checked=false;
@@ -535,14 +510,9 @@ const password=document.getElementById("regPassword").value;
 const selectedRole=document.getElementById("regRole").value;
 if(!fullName||!phone||!email||!password){alert("Please complete all registration fields.");return}
 if(password.length<6){alert("Your password must be at least 6 characters.");return}
-if(["landlord","agent"].includes(selectedRole)){
-const card=document.getElementById("regGhanaCard").value.trim().toUpperCase();
-if(card&&!CARD_PATTERN.test(card)){alert("Check your Ghana Card number format.");return}
-if(card&&!document.getElementById("regGhanaConsent").checked){alert("Please accept the Ghana Card registration statement.");return}
-}
 const {error}=await db.auth.signUp({email,password,options:{data:{full_name:fullName,phone,role:selectedRole}}});
 if(error){alert(error.message);return}
-alert("Account created. Check your email and confirm your email address. After logging in, landlords and agents must submit their Ghana Card securely in My Account. The 30-day free trial begins only after admin approval.");
+alert("Account created. Check your email and confirm your email address. Landlords and agents should then log in and submit their Ghana Card to start their individual 15-day free trial.");
 document.getElementById("loginEmail").value=email;
 document.getElementById("registerBox").classList.add("hidden");
 }
@@ -576,7 +546,8 @@ const images=propertyImages(property);
 const gallery=images.length?'<div class="gallery">'+images.map(url=>'<img src="'+safe(url)+'" alt="Property photograph" loading="lazy">').join("")+'</div>':'<div class="detail-image" style="height:220px;display:grid;place-items:center">No property photo available</div>';
 const whatsappButton=whatsapp?'<a target="_blank" rel="noopener" href="https://wa.me/'+whatsapp+'?text='+encodeURIComponent("Hello, I am interested in your property listed on ROOFLINK: "+property.title)+'"><button class="success">Contact Landlord on WhatsApp</button></a>':"";
 const phoneButton=property.contact_phone?'<a href="tel:'+safe(property.contact_phone)+'"><button class="primary">Call Landlord</button></a>':"";
-document.getElementById("detailContent").innerHTML='<h2>'+safe(property.title)+'</h2>'+gallery+'<p class="price">'+money(property.rent_amount)+' / '+safe(property.rent_period)+'</p><p><strong>'+safe(property.property_type)+'</strong></p><div class="detail-grid"><div class="detail-item"><strong>Region</strong>'+safe(property.region)+'</div><div class="detail-item"><strong>Town</strong>'+safe(property.town)+'</div><div class="detail-item"><strong>Area</strong>'+safe(property.area||"Not provided")+'</div><div class="detail-item"><strong>Bedrooms</strong>'+safe(property.bedrooms??0)+'</div><div class="detail-item"><strong>Bathrooms</strong>'+safe(property.bathrooms??0)+'</div><div class="detail-item"><strong>Advance required</strong>'+safe(property.advance_month??0)+' month(s)</div></div><h3>About this property</h3><p class="detail-description">'+safe(property.description||"No description provided.")+'</p><h3>Interested in this property?</h3><div class="detail-contact">'+whatsappButton+phoneButton+'</div><div class="enquiry-box"><h3>Request a Viewing</h3><p class="small">Log in as a tenant to request a viewing. Tenants pay GH₵50 only after the landlord confirms the viewing.</p><label>Your full name</label><input id="enquiryName" placeholder="Enter your full name" value="'+safe(currentProfile?.full_name||currentUser?.user_metadata?.full_name||"")+'"><label>Your phone number</label><input id="enquiryPhone" type="tel" placeholder="Enter your phone number"><label>Your message</label><textarea id="enquiryMessage" placeholder="Hello, I am interested in this property. I would like to arrange a viewing."></textarea><button id="enquirySubmitButton" class="gold" onclick="submitEnquiry(\''+safe(property.id)+'\')">Send Viewing Request</button><div id="enquiryStatus" class="status hidden"></div></div>';
+const rented=property.availability_status==="rented";
+document.getElementById("detailContent").innerHTML='<h2>'+safe(property.title)+'</h2>'+(rented?'<p><span class="status-badge rejected">RENTED</span></p>':'')+gallery+'<p class="price">'+money(property.rent_amount)+' / '+safe(property.rent_period)+'</p><p><strong>'+safe(property.property_type)+'</strong></p><div class="detail-grid"><div class="detail-item"><strong>Region</strong>'+safe(property.region)+'</div><div class="detail-item"><strong>Town</strong>'+safe(property.town)+'</div><div class="detail-item"><strong>Area</strong>'+safe(property.area||"Not provided")+'</div><div class="detail-item"><strong>Bedrooms</strong>'+safe(property.bedrooms??0)+'</div><div class="detail-item"><strong>Bathrooms</strong>'+safe(property.bathrooms??0)+'</div><div class="detail-item"><strong>Advance required</strong>'+safe(property.advance_month??0)+' month(s)</div></div><h3>About this property</h3><p class="detail-description">'+safe(property.description||"No description provided.")+'</p><h3>Interested in this property?</h3><div class="detail-contact">'+whatsappButton+phoneButton+'</div>'+(rented?'<div class="status">This property has been marked as rented and is not accepting new viewing requests.</div>':'<div class="enquiry-box"><h3>Request a Viewing</h3><p class="small">Log in as a tenant to request a viewing. Tenants pay GH₵50 only after the landlord confirms the viewing.</p><label>Your full name</label><input id="enquiryName" placeholder="Enter your full name" value="'+safe(currentProfile?.full_name||currentUser?.user_metadata?.full_name||"")+'"><label>Your phone number</label><input id="enquiryPhone" type="tel" placeholder="Enter your phone number"><label>Your message</label><textarea id="enquiryMessage" placeholder="Hello, I am interested in this property. I would like to arrange a viewing."></textarea><button id="enquirySubmitButton" class="gold" onclick="submitEnquiry(\''+safe(property.id)+'\')">Send Viewing Request</button><div id="enquiryStatus" class="status hidden"></div></div>');
 showSection("propertyDetails");
 }
 
@@ -671,20 +642,33 @@ list.appendChild(card);
 }catch(error){message("myEnquiriesMessage","Could not load your requests: "+error.message)}
 }
 
-async function startPayment(type,propertyId,enquiryId=null){
+async function startPayment(type,propertyId=null,enquiryId=null){
 if(!currentUser){alert("Please log in first.");showSection("account");return}
+if(["featured_listing","priority_promotion","video_promotion","landlord_subscription","agent_subscription","listing_fee","relist_fee"].includes(type)&&!await requireBusinessApproval())return;
 if(type==="viewing_fee"&&role()!=="tenant"){alert("Viewing fees are for tenant accounts.");return}
-if(type==="featured_listing"&&!await requireBusinessApproval())return;
-if(type==="landlord_subscription"||type==="agent_subscription"){
-if(!await requireBusinessApproval())return;
-}
-let amount=50,description="";
-if(type==="featured_listing"){amount=100;description="Featured property listing for 7 days."}
-if(type==="viewing_fee"){amount=50;description="Tenant viewing fee."}
-if(type==="landlord_subscription"){amount=50;description="Landlord subscription for 30 days."}
-if(type==="agent_subscription"){amount=100;description="Property agent subscription for 30 days."}
-activePayment={type,propertyId,enquiryId,amount};
-message("paymentDescription","Payment amount: "+money(amount)+" — "+description);
+const prices={
+viewing_fee:50,
+listing_fee:50,
+relist_fee:50,
+featured_listing:100,
+priority_promotion:50,
+video_promotion:50,
+landlord_subscription:50,
+agent_subscription:100
+};
+const descriptions={
+viewing_fee:"Tenant viewing fee.",
+listing_fee:"One additional property listing.",
+relist_fee:"Re-listing a rented property.",
+featured_listing:"Featured property promotion for 7 days.",
+priority_promotion:"Priority placement for 7 days.",
+video_promotion:"Property video promotion.",
+landlord_subscription:"Landlord subscription for 30 days.",
+agent_subscription:"Professional agent subscription for 30 days."
+};
+if(!prices[type]){alert("Unknown payment type.");return}
+activePayment={type,propertyId,enquiryId,amount:prices[type]};
+message("paymentDescription","Payment amount: "+money(prices[type])+" — "+descriptions[type]);
 document.getElementById("paymentPhone").value="";
 document.getElementById("paymentReference").value="";
 document.getElementById("paymentMessage").classList.add("hidden");
@@ -696,7 +680,7 @@ showSection("payment");
 async function submitPayment(){
 if(!currentUser||!activePayment){alert("Please select a valid payment first.");return}
 if(activePayment.type==="viewing_fee"&&role()!=="tenant"){alert("Only tenants can submit viewing payments.");return}
-if(["featured_listing","landlord_subscription","agent_subscription"].includes(activePayment.type)&&!await requireBusinessApproval())return;
+if(activePayment.type!=="viewing_fee"&&!await requireBusinessApproval())return;
 const phone=document.getElementById("paymentPhone").value.trim();
 const reference=document.getElementById("paymentReference").value.trim();
 if(!phone||phone.replace(/\D/g,"").length<9){alert("Enter the phone number used to send the MoMo payment.");return}
@@ -723,6 +707,7 @@ for(const file of files){
 if(!file.type.startsWith("image/")){alert("Only image files are allowed.");input.value="";selectedPhotos=[];return}
 if(file.size>MAX_IMAGE_SIZE){alert(file.name+" is larger than 8 MB.");input.value="";selectedPhotos=[];return}
 }
+selectedPhotos.forEach(item=>URL.revokeObjectURL(item.previewUrl));
 selectedPhotos=files.map(file=>({file,previewUrl:URL.createObjectURL(file)}));
 coverPhotoIndex=0;
 renderPhotoPreview();
@@ -744,12 +729,14 @@ preview.appendChild(div);
 });
 }
 
+async function getUnusedListingPayment(){
+const {data,error}=await db.from("rentlink_payments").select("id").eq("payer_id",currentUser.id).eq("payment_type","listing_fee").eq("status","verified").is("property_id",null).order("created_at",{ascending:true}).limit(1);
+if(error)throw error;
+return data?.[0]||null;
+}
+
 async function submitProperty(){
 if(!await requireBusinessApproval())return;
-if(!accountCanUpload()){
-alert("Your free trial or subscription is not active. Please subscribe before uploading another property.");
-showSection("landlord");return;
-}
 const title=document.getElementById("propertyTitle").value.trim();
 const description=document.getElementById("propertyDescription").value.trim();
 const region=document.getElementById("propertyRegion").value;
@@ -764,9 +751,26 @@ const advance_month=Number(document.getElementById("advanceMonth").value||0);
 const contact_phone=document.getElementById("contactPhone").value.trim();
 if(!title||!region||!town||!rent_amount||!contact_phone||selectedPhotos.length===0){alert("Complete the required fields and choose at least one property photograph.");return}
 const button=document.getElementById("submitPropertyButton");
-button.disabled=true;button.textContent="Uploading photographs...";
-const uploadedUrls=[];
+button.disabled=true;
 try{
+let listingPayment=null;
+let isFirstFree=false;
+if(!canListWithoutPayment()){
+if(!currentProfile?.first_free_listing_used){
+isFirstFree=true;
+}else{
+listingPayment=await getUnusedListingPayment();
+if(!listingPayment){
+button.disabled=false;
+button.textContent="Publish Property";
+alert("Your first free listing has already been used. This additional listing costs GH₵50. Submit the GH₵50 listing payment from My Properties, wait for admin verification, then return and publish your property.");
+showSection("landlord");
+return;
+}
+}
+}
+button.textContent="Uploading photographs...";
+const uploadedUrls=[];
 for(let i=0;i<selectedPhotos.length;i++){
 const file=selectedPhotos[i].file;
 const extension=(file.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
@@ -777,18 +781,32 @@ const {data:imageData}=db.storage.from("property-images").getPublicUrl(imagePath
 uploadedUrls.push(imageData.publicUrl);
 }
 const coverUrl=uploadedUrls[coverPhotoIndex]||uploadedUrls[0];
-const {error:insertError}=await db.from("properties").insert({
-owner_id:currentUser.id,title,description,region,town,area,property_type,bedrooms,bathrooms,rent_amount,rent_period,advance_month,contact_phone,image_url:coverUrl,image_urls:uploadedUrls,status:"pending"
-});
+const propertyRecord={
+owner_id:currentUser.id,title,description,region,town,area,property_type,bedrooms,bathrooms,rent_amount,rent_period,advance_month,contact_phone,
+image_url:coverUrl,image_urls:uploadedUrls,status:"approved",availability_status:"available",
+listing_payment_id:listingPayment?.id||null
+};
+button.textContent="Publishing property...";
+const {data:newProperty,error:insertError}=await db.from("properties").insert(propertyRecord).select("id").single();
 if(insertError)throw insertError;
-alert("Property and "+uploadedUrls.length+" photograph(s) submitted successfully. Your property will appear publicly after admin approval.");
+if(listingPayment){
+const {error:paymentUpdateError}=await db.from("rentlink_payments").update({property_id:newProperty.id}).eq("id",listingPayment.id);
+if(paymentUpdateError)console.error("Could not link listing payment:",paymentUpdateError);
+}
+if(isFirstFree){
+const {error:profileUpdateError}=await db.from("profiles").update({first_free_listing_used:true}).eq("id",currentUser.id);
+if(profileUpdateError)console.error("Could not mark free listing as used:",profileUpdateError);
+else currentProfile.first_free_listing_used=true;
+}
+alert("Your property has been published successfully. It is now visible on ROOFLINK without waiting for manual admin approval.");
 document.querySelectorAll("#uploadForm input:not([type=file]),#uploadForm textarea").forEach(el=>el.value="");
 document.getElementById("propertyImage").value="";
 selectedPhotos.forEach(item=>URL.revokeObjectURL(item.previewUrl));
 selectedPhotos=[];coverPhotoIndex=0;renderPhotoPreview();
 await loadMyProperties();
+showSection("landlord");
 }catch(error){alert("Property submission failed: "+error.message)}
-finally{button.disabled=false;button.textContent="Submit Property for Approval"}
+finally{button.disabled=false;button.textContent="Publish Property"}
 }
 
 async function loadProperties(){
@@ -796,20 +814,22 @@ const list=document.getElementById("propertyList"),featuredList=document.getElem
 list.innerHTML="";featuredList.innerHTML="";
 message("propertyMessage","Loading approved properties...");
 message("featuredMessage","Loading featured properties...");
-let query=db.from("properties").select("*").eq("status","approved").order("created_at",{ascending:false});
+let query=db.from("properties").select("*").eq("status","approved").neq("availability_status","hidden").order("created_at",{ascending:false});
 const region=document.getElementById("searchRegion").value,town=document.getElementById("searchTown").value.trim();
 if(region)query=query.eq("region",region);
 if(town)query=query.ilike("town","%"+town+"%");
 const {data,error}=await query;
 if(error){message("propertyMessage","Could not load properties: "+error.message);message("featuredMessage","Could not load featured properties.");return}
 if(!data?.length){message("propertyMessage","No approved properties found yet. Please check again soon.");message("featuredMessage","No featured properties right now.");return}
-const featured=data.filter(featuredActive),regular=data.filter(p=>!featuredActive(p));
+const visible=data.filter(p=>p.availability_status!=="hidden");
+const featured=visible.filter(featuredActive),regular=visible.filter(p=>!featuredActive(p));
 featured.sort((a,b)=>new Date(b.featured_until)-new Date(a.featured_until));
 function createPropertyCard(property,isFeatured){
 const card=document.createElement("article");card.className="property-card"+(isFeatured?" featured-card":"");
 const image=property.image_url?'<img src="'+safe(property.image_url)+'" alt="Property photograph" loading="lazy">':'<div style="height:190px;display:grid;place-items:center">No photo available</div>';
 const count=propertyImages(property).length;
-card.innerHTML=image+'<div class="property-info">'+(isFeatured?'<p><span class="featured-label">★ FEATURED</span></p>':"")+'<h3>'+safe(property.title)+'</h3><p>'+safe(property.property_type)+' · '+safe(property.town)+', '+safe(property.region)+'</p><p>'+safe(property.bedrooms)+' bedrooms · '+safe(property.bathrooms)+' bathrooms</p><p class="small">'+count+' property photo(s)</p><p class="price">'+money(property.rent_amount)+' / '+safe(property.rent_period)+'</p><button class="primary view-details">View Details</button></div>';
+const rented=property.availability_status==="rented";
+card.innerHTML=image+'<div class="property-info">'+(isFeatured?'<p><span class="featured-label">★ FEATURED</span></p>':"")+(rented?'<p><span class="status-badge rejected">RENTED</span></p>':"")+'<h3>'+safe(property.title)+'</h3><p>'+safe(property.property_type)+' · '+safe(property.town)+', '+safe(property.region)+'</p><p>'+safe(property.bedrooms)+' bedrooms · '+safe(property.bathrooms)+' bathrooms</p><p class="small">'+count+' property photo(s)'+(priorityActive(property)?" · Priority listing":"")+(videoPromotionActive(property)?" · Video promoted":"")+'</p><p class="price">'+money(property.rent_amount)+' / '+safe(property.rent_period)+'</p><button class="primary view-details">View Details</button></div>';
 card.querySelector(".view-details").addEventListener("click",()=>showPropertyDetails(property));
 return card;
 }
@@ -817,6 +837,24 @@ if(!featured.length)message("featuredMessage","No featured properties right now.
 else{message("featuredMessage",featured.length+" featured property/properties available.");featured.forEach(p=>featuredList.appendChild(createPropertyCard(p,true)))}
 if(!regular.length)message("propertyMessage","No ordinary listings found. Check the Featured Properties section above.");
 else{message("propertyMessage",regular.length+" ordinary approved property/properties found.");regular.forEach(p=>list.appendChild(createPropertyCard(p,false)))}
+}
+
+async function changeAvailability(property,newStatus,button){
+if(!currentUser||property.owner_id!==currentUser.id){alert("You can only update your own property.");return}
+if(newStatus==="available"&&property.availability_status==="rented"&&!canListWithoutPayment()){
+const {data:payments,error}=await db.from("rentlink_payments").select("id").eq("payer_id",currentUser.id).eq("payment_type","relist_fee").eq("property_id",property.id).eq("status","verified").limit(1);
+if(error){alert(error.message);return}
+if(!payments?.length){
+alert("Making a rented property available again costs GH₵50 unless your trial or subscription is active. Start the re-listing payment first.");
+return;
+}
+}
+if(!confirm("Change this property's availability to "+newStatus+"?"))return;
+button.disabled=true;
+const {error}=await db.from("properties").update({availability_status:newStatus}).eq("id",property.id).eq("owner_id",currentUser.id);
+if(error){alert("Could not update property: "+error.message);button.disabled=false;return}
+alert("Property availability updated.");
+await loadMyProperties();await loadProperties();
 }
 
 async function loadMyProperties(){
@@ -831,29 +869,39 @@ document.getElementById("totalCount").textContent=properties.length;
 document.getElementById("approvedCount").textContent=properties.filter(p=>p.status==="approved").length;
 document.getElementById("pendingCount").textContent=properties.filter(p=>p.status==="pending").length;
 document.getElementById("rejectedCount").textContent=properties.filter(p=>p.status==="rejected").length;
-const summary=document.getElementById("subscriptionSummary");
-summary.textContent=accountApprovalText();
+message("subscriptionSummary",accountApprovalText()+"\nFirst listing: Free (once per account). Additional listings after your trial: GH₵50 each. Landlord subscription: GH₵50/month. Professional agent subscription: GH₵100/month.");
 if(!properties.length)message("landlordMessage","You have not submitted any properties yet.");
 else message("landlordMessage","You have "+properties.length+" property listing(s).");
-const {data:payments}=await db.from("rentlink_payments").select("*").eq("payer_id",currentUser.id).eq("payment_type","featured_listing");
+const {data:payments}=await db.from("rentlink_payments").select("*").eq("payer_id",currentUser.id);
 properties.forEach(property=>{
 const card=document.createElement("div");card.className="admin-card";
 const images=propertyImages(property);
 const image=images.length?'<div class="gallery">'+images.map(url=>'<img src="'+safe(url)+'" alt="Property photograph">').join("")+'</div>':"";
 const propertyPayments=(payments||[]).filter(p=>p.property_id===property.id);
-const pending=propertyPayments.some(p=>p.status==="pending"),active=featuredActive(property);
-let featureText=active?"<p><span class='status-badge approved'>FEATURED UNTIL "+safe(new Date(property.featured_until).toLocaleDateString())+"</span></p>":pending?"<p><span class='status-badge pending'>Promotion payment awaiting verification</span></p>":"";
-card.innerHTML='<h3>'+safe(property.title)+'</h3>'+image+'<p><strong>Location:</strong> '+safe(property.town)+', '+safe(property.region)+'</p><p><strong>Rent:</strong> '+money(property.rent_amount)+' / '+safe(property.rent_period)+'</p><p><strong>Listing status:</strong> '+statusBadge(property.status)+'</p>'+featureText+(property.status==="approved"&&!active&&!pending?'<button class="gold promote-button">Promote for GH₵100 — 7 days</button>':"");
-const promoteButton=card.querySelector(".promote-button");
-if(promoteButton)promoteButton.addEventListener("click",()=>startPayment("featured_listing",property.id));
+const pending=propertyPayments.some(p=>p.status==="pending"&&["featured_listing","priority_promotion","video_promotion","relist_fee"].includes(p.payment_type));
+card.innerHTML='<h3>'+safe(property.title)+'</h3>'+image+'<p><strong>Location:</strong> '+safe(property.town)+', '+safe(property.region)+'</p><p><strong>Rent:</strong> '+money(property.rent_amount)+' / '+safe(property.rent_period)+'</p><p><strong>Publication:</strong> '+statusBadge(property.status)+'</p><p><strong>Availability:</strong> '+safe(property.availability_status||"available").toUpperCase()+'</p>'+(featuredActive(property)?'<p><span class="status-badge approved">FEATURED UNTIL '+safe(new Date(property.featured_until).toLocaleDateString())+'</span></p>':"")+(priorityActive(property)?'<p><span class="status-badge approved">PRIORITY UNTIL '+safe(new Date(property.priority_until).toLocaleDateString())+'</span></p>':"")+(videoPromotionActive(property)?'<p><span class="status-badge approved">VIDEO PROMOTED UNTIL '+safe(new Date(property.video_promotion_until).toLocaleDateString())+'</span></p>':"")+(pending?'<p><span class="status-badge pending">Promotion payment awaiting verification</span></p>':"")+'<div class="actions"><button class="primary available-button">Mark Available</button><button class="primary rented-button">Mark Rented</button><button class="primary hidden-button">Hide Property</button>'+(property.availability_status==="hidden"?'<button class="success unhide-button">Show Property</button>':"")+'</div><h4>Promote this property</h4><div class="actions"><button class="gold feature-button">Featured GH₵100 / 7 days</button><button class="gold priority-button">Priority GH₵50 / 7 days</button><button class="gold video-button">Video Promotion GH₵50</button><button class="gold relist-button">Re-list GH₵50</button></div>';
+card.querySelector(".available-button").addEventListener("click",()=>changeAvailability(property,"available",card.querySelector(".available-button")));
+card.querySelector(".rented-button").addEventListener("click",()=>changeAvailability(property,"rented",card.querySelector(".rented-button")));
+card.querySelector(".hidden-button").addEventListener("click",()=>changeAvailability(property,"hidden",card.querySelector(".hidden-button")));
+const unhide=card.querySelector(".unhide-button");
+if(unhide)unhide.addEventListener("click",()=>changeAvailability(property,"available",unhide));
+card.querySelector(".feature-button").addEventListener("click",()=>startPayment("featured_listing",property.id));
+card.querySelector(".priority-button").addEventListener("click",()=>startPayment("priority_promotion",property.id));
+card.querySelector(".video-button").addEventListener("click",()=>startPayment("video_promotion",property.id));
+card.querySelector(".relist-button").addEventListener("click",()=>startPayment("relist_fee",property.id));
 container.appendChild(card);
 });
 if(!trialActive()&&!subscriptionActive()){
 const sub=document.createElement("div");sub.className="admin-card";
-sub.innerHTML='<h3>Choose Your Subscription</h3><p>Landlord subscription: GH₵50 for 30 days.</p><p>Property Agent subscription: GH₵100 for 30 days.</p><p class="small">Your existing approved properties remain visible even when your trial expires. A subscription is required to upload new properties.</p><div class="actions"><button class="gold landlord-sub">Landlord — GH₵50</button><button class="gold agent-sub">Agent — GH₵100</button></div>';
+sub.innerHTML='<h3>Choose Your Subscription</h3><p>Landlord subscription: GH₵50 for 30 days.</p><p>Professional agent subscription: GH₵100 for 30 days.</p><p class="small">Existing published properties remain visible after your trial or subscription expires. Active subscriptions allow you to publish without paying a separate listing fee.</p><div class="actions"><button class="gold landlord-sub">Landlord — GH₵50/month</button><button class="gold agent-sub">Agent — GH₵100/month</button></div>';
 sub.querySelector(".landlord-sub").addEventListener("click",()=>startPayment("landlord_subscription",null));
 sub.querySelector(".agent-sub").addEventListener("click",()=>startPayment("agent_subscription",null));
 container.prepend(sub);
+}
+if(!trialActive()&&!subscriptionActive()&&currentProfile?.first_free_listing_used!==true){
+const free=document.createElement("div");free.className="admin-card";
+free.innerHTML="<h3>Your first listing is free</h3><p>You have not used your free property listing yet. You can publish one property at no charge.</p>";
+container.prepend(free);
 }
 }
 
@@ -862,63 +910,31 @@ if(!isAdmin||!currentUser){message("adminAccountsMessage","Admin access required
 const container=document.getElementById("adminAccounts");container.innerHTML="";
 message("adminAccountsMessage","Loading landlord and agent accounts...");
 try{
-const {data,error}=await db.from("profiles").select("id,full_name,role,identity_status,account_approved_at,trial_started_at,trial_ends_at,subscription_status,subscription_expires_at").in("role",["landlord","agent"]).order("full_name");
+const {data,error}=await db.from("profiles").select("id,full_name,role,identity_status,trial_started_at,trial_ends_at,first_free_listing_used,subscription_status,subscription_expires_at").in("role",["landlord","agent"]).order("full_name");
 if(error)throw error;
 if(!data?.length){message("adminAccountsMessage","No landlord or agent accounts found.");return}
 message("adminAccountsMessage",data.length+" landlord/agent account(s).");
 data.forEach(profile=>{
 const card=document.createElement("div");card.className="admin-card";
-const trial=profile.trial_ends_at?"Trial ends: "+new Date(profile.trial_ends_at).toLocaleString():"No trial started";
-card.innerHTML='<h3>'+safe(profile.full_name||"Unnamed account")+' — '+safe(profile.role)+'</h3><p><strong>Account ID:</strong> '+safe(profile.id)+'</p><p><strong>Identity status:</strong> '+safe(profile.identity_status||"not_required")+'</p><p><strong>Trial:</strong> '+safe(trial)+'</p><p><strong>Subscription:</strong> '+safe(profile.subscription_status||"inactive")+(profile.subscription_expires_at?" until "+safe(new Date(profile.subscription_expires_at).toLocaleDateString()):"")+'</p><div class="actions">'+(profile.identity_status!=="approved"?'<button class="success approve-account">Approve identity & start trial</button>':"")+'<button class="danger reject-account">Reject identity</button></div>';
-const approve=card.querySelector(".approve-account"),reject=card.querySelector(".reject-account");
-if(approve)approve.addEventListener("click",()=>approveBusinessAccount(profile,approve));
-if(reject)reject.addEventListener("click",()=>rejectBusinessAccount(profile,reject));
+card.innerHTML='<h3>'+safe(profile.full_name||"Unnamed account")+' — '+safe(profile.role)+'</h3><p><strong>Account ID:</strong> '+safe(profile.id)+'</p><p><strong>Ghana Card record:</strong> '+safe(profile.identity_status||"Check secure Ghana Card system")+'</p><p><strong>Trial started:</strong> '+safe(profile.trial_started_at?new Date(profile.trial_started_at).toLocaleString():"Not started")+'</p><p><strong>Trial ends:</strong> '+safe(profile.trial_ends_at?new Date(profile.trial_ends_at).toLocaleString():"Not started")+'</p><p><strong>First free listing used:</strong> '+(profile.first_free_listing_used?"Yes":"No")+'</p><p><strong>Subscription:</strong> '+safe(profile.subscription_status||"inactive")+(profile.subscription_expires_at?" until "+safe(new Date(profile.subscription_expires_at).toLocaleDateString()):"")+'</p>';
 container.appendChild(card);
 });
 }catch(error){message("adminAccountsMessage","Could not load accounts: "+error.message)}
 }
 
-async function approveBusinessAccount(profile,button){
-if(!isAdmin||!currentUser)return;
-if(!confirm("Approve this "+profile.role+" account and start its 30-day free trial? Only approve after completing your identity checks."))return;
-button.disabled=true;button.textContent="Approving...";
-const now=new Date(),end=new Date(now.getTime()+30*24*60*60*1000);
-const {data,error}=await db.from("profiles").update({
-identity_status:"approved",
-account_approved_at:now.toISOString(),
-trial_started_at:now.toISOString(),
-trial_ends_at:end.toISOString(),
-subscription_status:"inactive"
-}).eq("id",profile.id).select("id");
-if(error){alert("Approval failed: "+error.message);button.disabled=false;button.textContent="Approve identity & start trial";return}
-if(!data?.length){alert("No account was updated. Check your admin database permissions.");button.disabled=false;return}
-alert("Account approved. The 30-day free trial has started.");
-loadAdminAccounts();
-}
-
-async function rejectBusinessAccount(profile,button){
-if(!isAdmin||!currentUser)return;
-if(!confirm("Reject this landlord/agent identity submission?"))return;
-button.disabled=true;button.textContent="Rejecting...";
-const {data,error}=await db.from("profiles").update({identity_status:"rejected"}).eq("id",profile.id).select("id");
-if(error){alert("Rejection failed: "+error.message);button.disabled=false;button.textContent="Reject identity";return}
-if(!data?.length){alert("No account was updated. Check admin permissions.");button.disabled=false;return}
-alert("Identity submission rejected.");loadAdminAccounts();
-}
-
 async function loadAdminProperties(){
 if(!isAdmin||!currentUser){message("adminMessage","You do not have admin access.");return}
-message("adminMessage","Loading property submissions...");
+message("adminMessage","Loading property listings...");
 const container=document.getElementById("adminProperties");container.innerHTML="";
 const {data,error}=await db.from("properties").select("*").order("created_at",{ascending:false});
-if(error){message("adminMessage","Could not load submissions: "+error.message);return}
-if(!data?.length){message("adminMessage","No property submissions found.");return}
-message("adminMessage",data.length+" total submissions. "+data.filter(p=>p.status==="pending").length+" awaiting approval.");
+if(error){message("adminMessage","Could not load listings: "+error.message);return}
+if(!data?.length){message("adminMessage","No property listings found.");return}
+message("adminMessage",data.length+" total property listings.");
 data.forEach(property=>{
 const card=document.createElement("div");card.className="admin-card";
 const images=propertyImages(property);
 const gallery=images.length?'<div class="gallery">'+images.map(url=>'<img src="'+safe(url)+'" alt="Property photograph">').join("")+'</div>':"";
-card.innerHTML='<h3>'+safe(property.title)+'</h3>'+gallery+'<p><strong>Location:</strong> '+safe(property.town)+', '+safe(property.region)+'</p><p><strong>Rent:</strong> '+money(property.rent_amount)+' / '+safe(property.rent_period)+'</p><p><strong>Contact:</strong> '+safe(property.contact_phone)+'</p><p><strong>Status:</strong> '+statusBadge(property.status)+'</p><p>'+safe(property.description||"")+'</p><div class="actions"><button class="success" data-action="approved">Approve</button><button class="danger" data-action="rejected">Reject</button></div>';
+card.innerHTML='<h3>'+safe(property.title)+'</h3>'+gallery+'<p><strong>Location:</strong> '+safe(property.town)+', '+safe(property.region)+'</p><p><strong>Rent:</strong> '+money(property.rent_amount)+' / '+safe(property.rent_period)+'</p><p><strong>Contact:</strong> '+safe(property.contact_phone)+'</p><p><strong>Publication status:</strong> '+statusBadge(property.status)+'</p><p><strong>Availability:</strong> '+safe(property.availability_status||"available")+'</p><p>'+safe(property.description||"")+'</p><div class="actions"><button class="success" data-action="approved">Approve</button><button class="danger" data-action="rejected">Reject</button></div>';
 card.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>updatePropertyStatus(property.id,button.dataset.action)));
 container.appendChild(card);
 });
@@ -953,11 +969,17 @@ if(propertyIds.length){const result=await db.from("properties").select("id,title
 const propertyMap={};properties.forEach(p=>propertyMap[p.id]=p);
 rows.forEach(payment=>{
 const property=propertyMap[payment.property_id]||{},card=document.createElement("div");card.className="admin-card";
-let paymentTitle="Tenant viewing fee";
-if(payment.payment_type==="featured_listing")paymentTitle="Featured property listing";
-if(payment.payment_type==="landlord_subscription")paymentTitle="Landlord subscription";
-if(payment.payment_type==="agent_subscription")paymentTitle="Agent subscription";
-card.innerHTML='<h3>'+safe(paymentTitle)+'</h3><p><strong>Property:</strong> '+safe(property.title||payment.property_id||"Not applicable")+'</p><p><strong>Amount:</strong> '+money(payment.amount)+'</p><p><strong>MoMo phone:</strong> '+safe(payment.payment_phone)+'</p><p><strong>Transaction reference:</strong> '+safe(payment.payment_reference)+'</p><p><strong>Payer account ID:</strong> '+safe(payment.payer_id)+'</p><p><strong>Submitted:</strong> '+safe(payment.created_at?new Date(payment.created_at).toLocaleString():"Unavailable")+'</p><p><strong>Status:</strong> '+paymentBadge(payment.status)+'</p>'+(payment.status==="pending"?'<div class="actions"><button class="success verify-payment">Verify Payment</button><button class="danger reject-payment">Reject Payment</button></div>':"");
+const titles={
+viewing_fee:"Tenant viewing fee",
+listing_fee:"Additional property listing",
+relist_fee:"Property re-listing",
+featured_listing:"Featured property promotion",
+priority_promotion:"Priority placement promotion",
+video_promotion:"Video promotion",
+landlord_subscription:"Landlord subscription",
+agent_subscription:"Professional agent subscription"
+};
+card.innerHTML='<h3>'+safe(titles[payment.payment_type]||payment.payment_type)+'</h3><p><strong>Property:</strong> '+safe(property.title||payment.property_id||"Not applicable")+'</p><p><strong>Amount:</strong> '+money(payment.amount)+'</p><p><strong>MoMo phone:</strong> '+safe(payment.payment_phone)+'</p><p><strong>Transaction reference:</strong> '+safe(payment.payment_reference)+'</p><p><strong>Payer account ID:</strong> '+safe(payment.payer_id)+'</p><p><strong>Submitted:</strong> '+safe(payment.created_at?new Date(payment.created_at).toLocaleString():"Unavailable")+'</p><p><strong>Status:</strong> '+paymentBadge(payment.status)+'</p>'+(payment.status==="pending"?'<div class="actions"><button class="success verify-payment">Verify Payment</button><button class="danger reject-payment">Reject Payment</button></div>':"");
 const verify=card.querySelector(".verify-payment"),reject=card.querySelector(".reject-payment");
 if(verify)verify.addEventListener("click",()=>verifyPayment(payment,verify));
 if(reject)reject.addEventListener("click",()=>rejectPayment(payment,reject));
@@ -975,17 +997,34 @@ try{
 const {data,error}=await db.from("rentlink_payments").update({status:"verified",verified_at:new Date().toISOString(),verified_by:currentUser.id}).eq("id",payment.id).eq("status","pending").select("id");
 if(error)throw error;
 if(!data?.length)throw new Error("This payment was already updated or could not be found.");
+const now=Date.now();
 if(payment.payment_type==="featured_listing"){
-const until=new Date(Date.now()+7*24*60*60*1000).toISOString();
-const {error:featureError}=await db.from("properties").update({featured_until:until}).eq("id",payment.property_id);
-if(featureError)alert("Payment verified, but featured listing activation failed: "+featureError.message);
+const until=new Date(now+7*24*60*60*1000).toISOString();
+const {error:e}=await db.from("properties").update({featured_until:until}).eq("id",payment.property_id);
+if(e)alert("Payment verified, but featured promotion activation failed: "+e.message);
 else alert("Payment verified. Property featured for 7 days.");
+}else if(payment.payment_type==="priority_promotion"){
+const until=new Date(now+7*24*60*60*1000).toISOString();
+const {error:e}=await db.from("properties").update({priority_until:until}).eq("id",payment.property_id);
+if(e)alert("Payment verified, but priority activation failed: "+e.message);
+else alert("Payment verified. Priority placement activated for 7 days.");
+}else if(payment.payment_type==="video_promotion"){
+const until=new Date(now+7*24*60*60*1000).toISOString();
+const {error:e}=await db.from("properties").update({video_promotion_until:until}).eq("id",payment.property_id);
+if(e)alert("Payment verified, but video promotion activation failed: "+e.message);
+else alert("Payment verified. Video promotion activated for 7 days.");
 }else if(payment.payment_type==="landlord_subscription"||payment.payment_type==="agent_subscription"){
-const expiry=new Date(Date.now()+30*24*60*60*1000).toISOString();
-const {error:subError}=await db.from("profiles").update({subscription_status:"active",subscription_expires_at:expiry}).eq("id",payment.payer_id);
-if(subError)alert("Payment verified, but subscription activation failed: "+subError.message);
+const expiry=new Date(now+30*24*60*60*1000).toISOString();
+const {error:e}=await db.from("profiles").update({subscription_status:"active",subscription_expires_at:expiry}).eq("id",payment.payer_id);
+if(e)alert("Payment verified, but subscription activation failed: "+e.message);
 else alert("Payment verified. Subscription activated for 30 days.");
-}else{
+}else if(payment.payment_type==="relist_fee"){
+const {error:e}=await db.from("properties").update({availability_status:"available",listing_payment_id:payment.id}).eq("id",payment.property_id);
+if(e)alert("Payment verified, but property re-listing activation failed: "+e.message);
+else alert("Payment verified. Your property is available again.");
+}else if(payment.payment_type==="listing_fee"){
+alert("Payment verified. The GH₵50 listing credit is ready. The landlord or agent can now return to Upload Property and publish one additional listing.");
+}else if(payment.payment_type==="viewing_fee"){
 alert("Viewing fee payment verified successfully.");
 }
 await loadAdminPayments();await loadProperties();await loadAdminAccounts();
