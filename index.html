@@ -197,7 +197,209 @@ footer{text-align:center;background:var(--dark);color:white;padding:25px;margin-
 <div id="myPropertyList"></div>
 </section>
 
-<section id="enquiries" class="panel hidden"> function showSection(sectionId){
+<section id="enquiries" class="panel hidden">
+<h2>Landlord Enquiries Inbox</h2>
+<p class="small">View tenants who have requested to visit your properties.</p>
+<button class="primary" onclick="loadLandlordEnquiries()">Refresh Enquiries</button>
+<div id="enquiriesMessage" class="status">Your viewing requests will appear here.</div>
+<div id="enquiriesList"></div>
+</section>
+
+<section id="myEnquiries" class="panel hidden">
+<h2>My Viewing Requests</h2>
+<button class="primary" onclick="loadMyEnquiries()">Refresh My Enquiries</button>
+<div id="myEnquiriesMessage" class="status">Loading your requests...</div>
+<div id="myEnquiriesList"></div>
+</section>
+
+<section id="payment" class="panel hidden">
+<h2>ROOFLINK Payment</h2>
+<div id="paymentDescription" class="status"></div>
+<div class="payment-instructions">
+<h3>Pay by MTN Mobile Money</h3>
+<p><strong>Network:</strong> MTN Mobile Money</p>
+<p><strong>MoMo number:</strong> 059 169 5160</p>
+<p><strong>Account name:</strong> Felix Fiifi Walter</p>
+<p>Send the exact amount shown above. Enter the phone number used and transaction reference below.</p>
+<p><strong>Important:</strong> Admin checks the transaction before activating your service.</p>
+</div>
+<label>Your MoMo phone number</label><input id="paymentPhone" type="tel" placeholder="Phone number used to send money">
+<label>MTN MoMo transaction reference</label><input id="paymentReference" placeholder="Enter the transaction ID/reference">
+<button id="submitPaymentButton" class="gold" onclick="submitPayment()">I Have Sent the Payment</button>
+<button class="primary" onclick="showSection('browse')">Cancel</button>
+<div id="paymentMessage" class="status hidden"></div>
+</section>
+
+<section id="upload" class="panel hidden">
+<h2>Upload a Property</h2>
+<div id="uploadNotice" class="status"></div>
+<div id="uploadForm" class="hidden">
+<label>Property title</label><input id="propertyTitle" placeholder="Example: 2-bedroom apartment">
+<label>Description</label><textarea id="propertyDescription" placeholder="Describe the property and its facilities"></textarea>
+<label>Region</label>
+<select id="propertyRegion">
+<option value="">Choose region</option>
+<option>Greater Accra</option><option>Ashanti</option><option>Eastern</option><option>Central</option><option>Western</option><option>Western North</option><option>Volta</option><option>Oti</option><option>Upper East</option><option>Upper West</option><option>Northern</option><option>Savannah</option><option>North East</option><option>Bono</option><option>Bono East</option><option>Ahafo</option>
+</select>
+<label>Town</label><input id="propertyTown" placeholder="Town">
+<label>Area / neighbourhood</label><input id="propertyArea" placeholder="Area or neighbourhood">
+<label>Property type</label>
+<select id="propertyType"><option>Apartment</option><option>Self-contained</option><option>Chamber and Hall</option><option>Single Room</option><option>House</option><option>Shop</option><option>Land</option></select>
+<label>Number of bedrooms</label><input id="bedrooms" type="number" min="0" placeholder="Bedrooms">
+<label>Number of bathrooms</label><input id="bathrooms" type="number" min="0" placeholder="Bathrooms">
+<label>Rent amount (GH₵)</label><input id="rentAmount" type="number" min="1" placeholder="Rent amount">
+<label>Rent period</label><select id="rentPeriod"><option>Monthly</option><option>Yearly</option><option>One-time</option></select>
+<label>Advance required (months)</label><input id="advanceMonth" type="number" min="0" placeholder="Example: 12">
+<label>Contact phone / WhatsApp</label><input id="contactPhone" placeholder="Phone number">
+<label>Property photographs (maximum 10)</label>
+<input id="propertyImage" type="file" accept="image/*" multiple onchange="previewPropertyPhotos()">
+<p class="small">Choose up to 10 photographs. Each image must be 8 MB or smaller. Select which photograph should be the cover image.</p>
+<div id="photoPreview" class="photo-preview"></div>
+<button class="gold" id="submitPropertyButton" onclick="submitProperty()">Publish Property</button>
+</div>
+</section>
+
+<section id="admin" class="panel hidden">
+<h2>ROOFLINK Admin Dashboard</h2>
+<div class="status">Admin access is checked against your existing admin membership.</div>
+
+<hr>
+<h2>Landlord & Agent Accounts</h2>
+<p class="small">View landlord and agent registration, Ghana Card submission and trial information. No manual approval is required before publishing.</p>
+<button class="primary" onclick="loadAdminAccounts()">Refresh Accounts</button>
+<div id="adminAccountsMessage" class="status">Loading accounts...</div>
+<div id="adminAccounts"></div>
+
+<hr>
+<h2>Property Listings</h2>
+<div id="adminMessage" class="status">Checking access...</div>
+<div id="adminProperties"></div>
+
+<hr>
+<h2>Revenue & Payments</h2>
+<p class="small">Verify transactions only after checking your actual MTN MoMo account.</p>
+<button class="primary" onclick="loadAdminPayments()">Refresh Payments</button>
+<div class="stats">
+<div class="stat"><strong id="revenueTotal">GH₵0</strong><span>Verified revenue</span></div>
+<div class="stat"><strong id="paymentPendingCount">0</strong><span>Awaiting verification</span></div>
+<div class="stat"><strong id="paymentVerifiedCount">0</strong><span>Verified payments</span></div>
+</div>
+<div id="paymentsMessage" class="status">Payment records will appear here.</div>
+<div id="adminPayments"></div>
+</section>
+
+</main>
+
+<footer>
+<strong>ROOF<span>LINK</span></strong>
+<p>Your Home. Your Connection.</p>
+<p class="small">© 2026 ROOFLINK. All rights reserved.</p>
+</footer>
+
+<script>
+const SUPABASE_URL="https://gloeodrutneogyslyxpn.supabase.co";
+const SUPABASE_KEY="sb_publishable_KpbH6SIOkTThq1BiQ8EobA_XdMwa7ru";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const MOMO_NUMBER="0591695160";
+const MOMO_NAME="Felix Fiifi Walter";
+const CARD_PATTERN=/^GHA-\d{9}-\d$/;
+const MAX_PHOTOS=10;
+const MAX_IMAGE_SIZE=8*1024*1024;
+
+let currentUser=null,currentProfile=null,isAdmin=false;
+let activePayment=null;
+let ghanaCardSubmitted=false;
+let ghanaCardCheckError=false;
+let selectedPhotos=[];
+let coverPhotoIndex=0;
+
+function message(id,text){document.getElementById(id).textContent=text}
+function safe(value){
+return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+}
+function money(value){return "GH₵"+Number(value||0).toLocaleString("en-GH",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function role(){return String(currentProfile?.role||"tenant").toLowerCase()}
+function isBusinessRole(){return ["landlord","agent"].includes(role())}
+function statusBadge(status){
+const known=["pending","approved","rejected"].includes(status)?status:"pending";
+return '<span class="status-badge '+known+'">'+safe(known.toUpperCase())+'</span>';
+}
+function paymentBadge(status){
+const known=["pending","verified","rejected"].includes(status)?status:"pending";
+return '<span class="status-badge '+(known==="verified"?"approved":known==="rejected"?"rejected":"pending")+'">'+safe(known.toUpperCase())+'</span>';
+}
+function viewingBadge(status){
+const known=status==="confirmed"?"confirmed":status==="declined"?"declined":"pending";
+return '<span class="status-badge '+(known==="confirmed"?"approved":known==="declined"?"rejected":"pending")+'">'+safe(known.toUpperCase())+'</span>';
+}
+function featuredActive(property){return property.featured_until&&new Date(property.featured_until)>new Date()}
+function priorityActive(property){return property.priority_until&&new Date(property.priority_until)>new Date()}
+function videoPromotionActive(property){return property.video_promotion_until&&new Date(property.video_promotion_until)>new Date()}
+function trialActive(){return !!currentProfile?.trial_ends_at&&new Date(currentProfile.trial_ends_at)>new Date()}
+function subscriptionActive(){return currentProfile?.subscription_status==="active"&&currentProfile?.subscription_expires_at&&new Date(currentProfile.subscription_expires_at)>new Date()}
+function accountCanUpload(){return isBusinessRole()&&ghanaCardSubmitted&&(trialActive()||subscriptionActive())}
+function canListWithoutPayment(){return accountCanUpload()}
+function accountApprovalText(){
+if(!isBusinessRole())return "Tenant account.";
+if(!ghanaCardSubmitted)return "Submit your Ghana Card to start your individual 15-day free trial.";
+if(trialActive())return "Your individual 15-day free trial is active until "+new Date(currentProfile.trial_ends_at).toLocaleDateString()+".";
+if(subscriptionActive())return "Your subscription is active until "+new Date(currentProfile.subscription_expires_at).toLocaleDateString()+".";
+return "Your free trial has ended. Your first property listing is free if you have not used it. Additional listings cost GH₵50 each, or choose a subscription.";
+}
+
+async function checkGhanaCardStatus(){
+if(!currentUser||!isBusinessRole()){ghanaCardSubmitted=false;return false}
+ghanaCardCheckError=false;
+try{
+const {data,error}=await db.functions.invoke("smart-action",{body:{action:"status"}});
+if(error)throw error;
+ghanaCardSubmitted=data?.hasRecord===true;
+if(ghanaCardSubmitted&&currentProfile&&!currentProfile.trial_started_at){
+const {data:trialData,error:trialError}=await db.rpc("start_rooflink_trial");
+if(trialError)console.error("Trial start error:",trialError);
+else if(trialData?.success){
+const {data:updated}=await db.from("profiles").select("*").eq("id",currentUser.id).maybeSingle();
+if(updated)currentProfile=updated;
+}
+}
+return ghanaCardSubmitted;
+}catch(error){
+console.error("Ghana Card status check failed:",error);
+ghanaCardSubmitted=false;
+ghanaCardCheckError=true;
+return false;
+}
+}
+
+function updateGhanaCardUI(){
+const panel=document.getElementById("ghanaCardPanel");
+const form=document.getElementById("ghanaCardForm");
+if(!currentUser||!isBusinessRole()){panel.classList.add("hidden");return}
+panel.classList.remove("hidden");
+if(ghanaCardSubmitted){
+message("ghanaCardStatus","✓ Ghana Card submission received. Your individual 15-day free trial starts after successful submission. You can publish properties without waiting for manual admin approval.");
+form.classList.add("hidden");
+}else if(ghanaCardCheckError){
+message("ghanaCardStatus","We could not check your Ghana Card submission. Refresh your account and try again.");
+form.classList.add("hidden");
+}else{
+message("ghanaCardStatus","Ghana Card submission is required before you can publish properties.");
+form.classList.remove("hidden");
+}
+}
+
+async function requireBusinessApproval(){
+if(!currentUser){alert("Please log in first.");showSection("account");return false}
+if(!isBusinessRole()){alert("This feature is for landlord and agent accounts.");return false}
+if(!ghanaCardSubmitted){await checkGhanaCardStatus();updateGhanaCardUI()}
+if(!ghanaCardSubmitted){
+alert("Please submit your Ghana Card in My Account first.");
+showSection("account");return false;
+}
+return true;
+}
+
+function showSection(sectionId){
 const sections=["browse","propertyDetails","account","upload","landlord","admin","enquiries","myEnquiries","payment"];
 sections.forEach(id=>document.getElementById(id).classList.add("hidden"));
 if(sectionId==="admin"&&!isAdmin){alert("Admin access is not available for this account.");return}
@@ -595,7 +797,7 @@ if(isFirstFree){
 const {error:profileUpdateError}=await db.from("profiles").update({first_free_listing_used:true}).eq("id",currentUser.id);
 if(profileUpdateError)console.error("Could not mark free listing as used:",profileUpdateError);
 else currentProfile.first_free_listing_used=true;
-} }
+}
 alert("Your property has been published successfully. It is now visible on ROOFLINK without waiting for manual admin approval.");
 document.querySelectorAll("#uploadForm input:not([type=file]),#uploadForm textarea").forEach(el=>el.value="");
 document.getElementById("propertyImage").value="";
@@ -837,66 +1039,6 @@ const {data,error}=await db.from("rentlink_payments").update({status:"rejected",
 if(error){alert("Could not reject payment: "+error.message);button.disabled=false;button.textContent="Reject Payment";return}
 if(!data?.length){alert("This payment was already updated.");return}
 alert("Payment rejected.");await loadAdminPayments();
-}
-
-/* REPORT PROPERTY FEATURE */
-function showPropertyDetails(property){
-const whatsapp=String(property.contact_phone||"").replace(/\D/g,"");
-const images=propertyImages(property);
-const gallery=images.length?'<div class="gallery">'+images.map(url=>'<img src="'+safe(url)+'" alt="Property photograph" loading="lazy">').join("")+'</div>':'<div class="detail-image" style="height:220px;display:grid;place-items:center">No property photo available</div>';
-const whatsappButton=whatsapp?'<a target="_blank" rel="noopener" href="https://wa.me/'+whatsapp+'?text='+encodeURIComponent("Hello, I am interested in your property listed on ROOFLINK: "+property.title)+'"><button class="success">Contact Landlord on WhatsApp</button></a>':"";
-const phoneButton=property.contact_phone?'<a href="tel:'+safe(property.contact_phone)+'"><button class="primary">Call Landlord</button></a>':"";
-const rented=property.availability_status==="rented";
-document.getElementById("detailContent").innerHTML=
-'<h2>'+safe(property.title)+'</h2>'+
-(rented?'<p><span class="status-badge rejected">RENTED</span></p>':'')+
-gallery+
-'<p class="price">'+money(property.rent_amount)+' / '+safe(property.rent_period)+'</p>'+
-'<p><strong>'+safe(property.property_type)+'</strong></p>'+
-'<div class="detail-grid"><div class="detail-item"><strong>Region</strong>'+safe(property.region)+'</div><div class="detail-item"><strong>Town</strong>'+safe(property.town)+'</div><div class="detail-item"><strong>Area</strong>'+safe(property.area||"Not provided")+'</div><div class="detail-item"><strong>Bedrooms</strong>'+safe(property.bedrooms??0)+'</div><div class="detail-item"><strong>Bathrooms</strong>'+safe(property.bathrooms??0)+'</div><div class="detail-item"><strong>Advance required</strong>'+safe(property.advance_month??0)+' month(s)</div></div>'+
-'<h3>About this property</h3><p class="detail-description">'+safe(property.description||"No description provided.")+'</p>'+
-'<h3>Interested in this property?</h3><div class="detail-contact">'+whatsappButton+phoneButton+'</div>'+
-(rented?'<div class="status">This property has been marked as rented and is not accepting new viewing requests.</div>':'<div class="enquiry-box"><h3>Request a Viewing</h3><p class="small">Log in as a tenant to request a viewing. Tenants pay GH₵50 only after the landlord confirms the viewing.</p><label>Your full name</label><input id="enquiryName" placeholder="Enter your full name" value="'+safe(currentProfile?.full_name||currentUser?.user_metadata?.full_name||"")+'"><label>Your phone number</label><input id="enquiryPhone" type="tel" placeholder="Enter your phone number"><label>Your message</label><textarea id="enquiryMessage" placeholder="Hello, I am interested in this property. I would like to arrange a viewing."></textarea><button id="enquirySubmitButton" class="gold" onclick="submitEnquiry(\''+safe(property.id)+'\')">Send Viewing Request</button><div id="enquiryStatus" class="status hidden"></div></div>')+
-'<div class="enquiry-box" id="reportPropertyBox"><h3>Report this Property</h3><p class="small">Think this listing is fake, misleading or suspicious? Tell ROOFLINK so it can be reviewed.</p><label for="propertyReportReason">Reason for report</label><select id="propertyReportReason"><option value="">Choose a reason</option><option>Fake or misleading listing</option><option>Property already rented</option><option>Wrong price or location</option><option>Requesting money before viewing</option><option>Suspicious contact or possible scam</option><option>Other</option></select><label for="propertyReportDetails">Additional details (optional)</label><textarea id="propertyReportDetails" placeholder="Explain what seems wrong with this listing..."></textarea><p class="small">Do not include passwords, Ghana Card numbers, bank details or other private information.</p><button id="submitPropertyReportButton" class="danger" onclick="submitPropertyReport(\''+safe(property.id)+'\')">Submit Report</button><div id="propertyReportStatus" class="status hidden"></div></div>';
-showSection("propertyDetails");
-}
-
-async function submitPropertyReport(propertyId){
-if(!currentUser){
-alert("Please log in before reporting a property.");
-showSection("account");
-return;
-}
-const reason=document.getElementById("propertyReportReason").value;
-const details=document.getElementById("propertyReportDetails").value.trim();
-const statusBox=document.getElementById("propertyReportStatus");
-const button=document.getElementById("submitPropertyReportButton");
-if(!reason){
-alert("Please select a reason for reporting this property.");
-return;
-}
-if(!confirm("Submit this report to ROOFLINK for review?"))return;
-button.disabled=true;
-button.textContent="Submitting...";
-statusBox.classList.remove("hidden");
-statusBox.textContent="Submitting your report...";
-try{
-const {error}=await db.from("property_reports").insert({
-property_id:propertyId,
-reporter_id:currentUser.id,
-reason:reason,
-details:details||null
-});
-if(error)throw error;
-statusBox.textContent="Thank you. Your report has been submitted for review.";
-button.textContent="Report Submitted";
-document.getElementById("propertyReportReason").disabled=true;
-document.getElementById("propertyReportDetails").disabled=true;
-}catch(error){
-statusBox.textContent="Your report could not be submitted: "+error.message;
-button.disabled=false;
-button.textContent="Submit Report";
-}
 }
 
 async function initializeApp(){
