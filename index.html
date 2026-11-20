@@ -283,7 +283,13 @@ footer{text-align:center;background:var(--dark);color:white;padding:25px;margin-
 <div class="stat"><strong id="revenueTotal">GH₵0</strong><span>Verified revenue</span></div>
 <div class="stat"><strong id="paymentPendingCount">0</strong><span>Awaiting verification</span></div>
 <div class="stat"><strong id="paymentVerifiedCount">0</strong><span>Verified payments</span></div>
-</div>
+</div> 
+  <hr>
+<h2>Property Reports</h2>
+<p class="small">Review reports submitted by ROOFLINK users.</p>
+<button class="primary" onclick="loadAdminReports()">Refresh Reports</button>
+<div id="adminReportsMessage" class="status">Reports will appear here.</div>
+<div id="adminReports"></div>
 <div id="paymentsMessage" class="status">Payment records will appear here.</div>
 <div id="adminPayments"></div>
 </section>
@@ -949,7 +955,11 @@ if(!data?.length){alert("No property was updated. Check admin permissions.");ret
 alert("Property "+newStatus+" successfully.");
 await loadAdminProperties();await loadProperties();
 }
-
+const reportButton=document.createElement("button");
+reportButton.className="danger";
+reportButton.textContent="Report this Property";
+reportButton.onclick=()=>submitPropertyReport(property.id);
+document.getElementById("detailContent").appendChild(reportButton);
 async function loadAdminPayments(){
 if(!isAdmin||!currentUser){message("paymentsMessage","Admin access required.");return}
 const container=document.getElementById("adminPayments");container.innerHTML="";
