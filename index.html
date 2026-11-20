@@ -516,7 +516,20 @@ const password=document.getElementById("regPassword").value;
 const selectedRole=document.getElementById("regRole").value;
 if(!fullName||!phone||!email||!password){alert("Please complete all registration fields.");return}
 if(password.length<6){alert("Your password must be at least 6 characters.");return}
-const {error}=await db.auth.signUp({email,password,options:{data:{full_name:fullName,phone,role:selectedRole}}});
+
+const {error}=await db.auth.signUp({
+  email,
+  password,
+  options:{
+    emailRedirectTo:"https://4kf6dt627m-ai.github.io/rentlink-ghana/",
+    data:{
+      full_name:fullName,
+      phone,
+      role:selectedRole
+    }
+  }
+});
+
 if(error){alert(error.message);return}
 alert("Account created. Check your email and confirm your email address. Landlords and agents should then log in and submit their Ghana Card to start their individual 15-day free trial.");
 document.getElementById("loginEmail").value=email;
