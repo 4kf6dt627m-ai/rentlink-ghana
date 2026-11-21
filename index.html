@@ -566,10 +566,72 @@ const gallery=images.length?'<div class="gallery">'+images.map(url=>'<img src="'
 const whatsappButton=whatsapp?'<a target="_blank" rel="noopener" href="https://wa.me/'+whatsapp+'?text='+encodeURIComponent("Hello, I am interested in your property listed on ROOFLINK: "+property.title)+'"><button class="success">Contact Landlord on WhatsApp</button></a>':"";
 const phoneButton=property.contact_phone?'<a href="tel:'+safe(property.contact_phone)+'"><button class="primary">Call Landlord</button></a>':"";
 const rented=property.availability_status==="rented";
-document.getElementById("detailContent").innerHTML='<h2>'+safe(property.title)+'</h2>'+(rented?'<p><span class="status-badge rejected">RENTED</span></p>':'')+gallery+'<p class="price">'+money(property.rent_amount)+' / '+safe(property.rent_period)+'</p><p><strong>'+safe(property.property_type)+'</strong></p><div class="detail-grid"><div class="detail-item"><strong>Region</strong>'+safe(property.region)+'</div><div class="detail-item"><strong>Town</strong>'+safe(property.town)+'</div><div class="detail-item"><strong>Area</strong>'+safe(property.area||"Not provided")+'</div><div class="detail-item"><strong>Bedrooms</strong>'+safe(property.bedrooms??0)+'</div><div class="detail-item"><strong>Bathrooms</strong>'+safe(property.bathrooms??0)+'</div><div class="detail-item"><strong>Advance required</strong>'+safe(property.advance_month??0)+' month(s)</div></div><h3>About this property</h3><p class="detail-description">'+safe(property.description||"No description provided.")+'</p><h3>Interested in this property?</h3><div class="detail-contact">'+whatsappButton+phoneButton+'</div>'+(rented?'<div class="status">This property has been marked as rented and is not accepting new viewing requests.</div>':'<div class="enquiry-box"><h3>Request a Viewing</h3><p class="small">Log in as a tenant to request a viewing. Tenants pay GH₵50 only after the landlord confirms the viewing.</p><label>Your full name</label><input id="enquiryName" placeholder="Enter your full name" value="'+safe(currentProfile?.full_name||currentUser?.user_metadata?.full_name||"")+'"><label>Your phone number</label><input id="enquiryPhone" type="tel" placeholder="Enter your phone number"><label>Your message</label><textarea id="enquiryMessage" placeholder="Hello, I am interested in this property. I would like to arrange a viewing."></textarea><button id="enquirySubmitButton" class="gold" onclick="submitEnquiry(\''+safe(property.id)+'\')">Send Viewing Request</button><div id="enquiryStatus" class="status hidden"></div></div>');
+
+const detail=document.getElementById("detailContent");
+
+detail.innerHTML=
+'<h2>'+safe(property.title)+'</h2>'+
+(rented?'<p><span class="status-badge rejected">RENTED</span></p>':'')+
+gallery+
+'<p class="price">'+money(property.rent_amount)+' / '+safe(property.rent_period)+'</p>'+
+'<p><strong>'+safe(property.property_type)+'</strong></p>'+
+'<div class="detail-grid">'+
+'<div class="detail-item"><strong>Region</strong>'+safe(property.region)+'</div>'+
+'<div class="detail-item"><strong>Town</strong>'+safe(property.town)+'</div>'+
+'<div class="detail-item"><strong>Area</strong>'+safe(property.area||"Not provided")+'</div>'+
+'<div class="detail-item"><strong>Bedrooms</strong>'+safe(property.bedrooms??0)+'</div>'+
+'<div class="detail-item"><strong>Bathrooms</strong>'+safe(property.bathrooms??0)+'</div>'+
+'<div class="detail-item"><strong>Advance required</strong>'+safe(property.advance_month??0)+' month(s)</div>'+
+'</div>'+
+'<h3>About this property</h3>'+
+'<p class="detail-description">'+safe(property.description||"No description provided.")+'</p>'+
+'<h3>Interested in this property?</h3>'+
+'<div class="detail-contact">'+whatsappButton+phoneButton+'</div>'+
+(rented?
+'<div class="status">This property has been marked as rented and is not accepting new viewing requests.</div>':
+'<div class="enquiry-box"><h3>Request a Viewing</h3><p class="small">Log in as a tenant to request a viewing. Tenants pay GH₵50 only after the landlord confirms the viewing.</p><label>Your full name</label><input id="enquiryName" placeholder="Enter your full name" value="'+safe(currentProfile?.full_name||currentUser?.user_metadata?.full_name||"")+'"><label>Your phone number</label><input id="enquiryPhone" type="tel" placeholder="Enter your phone number"><label>Your message</label><textarea id="enquiryMessage" placeholder="Hello, I am interested in this property. I would like to arrange a viewing."></textarea><button id="enquirySubmitButton" class="gold" onclick="submitEnquiry(\''+safe(property.id)+'\')">Send Viewing Request</button><div id="enquiryStatus" class="status hidden"></div></div>'
+);
+
+const reportBox=document.createElement("div");
+reportBox.className="enquiry-box";
+reportBox.innerHTML=
+'<h3>Report this Property</h3>'+
+'<p class="small">Help us keep ROOFLINK safe. Report fake, misleading or suspicious listings.</p>'+
+'<button type="button" class="danger" id="openReportForm">Report Property</button>'+
+'<div id="propertyReportForm" class="hidden">'+
+'<label>Reason for reporting</label>'+
+'<select id="propertyReportReason">'+
+'<option value="">Select a reason</option>'+
+'<option>Fake or misleading listing</option>'+
+'<option>Incorrect price or property details</option>'+
+'<option>Property already rented</option>'+
+'<option>Suspicious or fraudulent activity</option>'+
+'<option>Inappropriate content</option>'+
+'<option>Other</option>'+
+'</select>'+
+'<label>Additional information (optional)</label>'+
+'<textarea id="propertyReportDetails" placeholder="Explain the problem..."></textarea>'+
+'<button type="button" class="danger" id="submitPropertyReportButton">Submit Report</button>'+
+'<div id="propertyReportMessage" class="status hidden"></div>'+
+'</div>';
+
+detail.appendChild(reportBox);
+
+document.getElementById("openReportForm").onclick=()=>{
+if(!currentUser){
+alert("Please log in before reporting a property.");
+showSection("account");
+return;
+}
+document.getElementById("propertyReportForm").classList.remove("hidden");
+};
+
+document.getElementById("submitPropertyReportButton").onclick=()=>{
+submitPropertyReport(property.id);
+};
+
 showSection("propertyDetails");
 }
-
 async function submitEnquiry(propertyId){
 if(!currentUser){alert("Please log in as a tenant first.");showSection("account");return}
 if(role()!=="tenant"){alert("Viewing requests are for tenant accounts.");return}
@@ -590,7 +652,49 @@ document.getElementById("enquiryMessage").value="";
 button.textContent="Request Sent";
 }catch(error){statusBox.textContent="Could not send your request: "+error.message;button.disabled=false;button.textContent="Send Viewing Request"}
 }
+async function submitPropertyReport(propertyId){
+if(!currentUser){
+alert("Please log in before reporting a property.");
+showSection("account");
+return;
+}
 
+const reason=document.getElementById("propertyReportReason").value;
+const details=document.getElementById("propertyReportDetails").value.trim();
+const button=document.getElementById("submitPropertyReportButton");
+const statusBox=document.getElementById("propertyReportMessage");
+
+if(!reason){
+alert("Please select a reason for reporting.");
+return;
+}
+
+button.disabled=true;
+button.textContent="Submitting...";
+statusBox.classList.remove("hidden");
+statusBox.textContent="Submitting your report...";
+
+try{
+const {error}=await db.from("property_reports").insert({
+property_id:propertyId,
+reporter_id:currentUser.id,
+reason:reason,
+details:details||null
+});
+
+if(error)throw error;
+
+statusBox.textContent="Your report has been submitted successfully. Thank you for helping keep ROOFLINK safe.";
+document.getElementById("propertyReportReason").value="";
+document.getElementById("propertyReportDetails").value="";
+button.textContent="Report Submitted";
+
+}catch(error){
+statusBox.textContent="Report submission failed: "+error.message;
+button.disabled=false;
+button.textContent="Submit Report";
+}
+}
 async function loadLandlordEnquiries(){
 if(!currentUser||!isBusinessRole()){message("enquiriesMessage","Please log in as a landlord or agent.");return}
 if(!await requireBusinessApproval())return;
@@ -923,7 +1027,120 @@ free.innerHTML="<h3>Your first listing is free</h3><p>You have not used your fre
 container.prepend(free);
 }
 }
+async function loadAdminReports(){
+if(!isAdmin||!currentUser){
+message("adminReportsMessage","Admin access required.");
+return;
+}
 
+const container=document.getElementById("adminReports");
+container.innerHTML="";
+message("adminReportsMessage","Loading property reports...");
+
+try{
+const {data:reports,error}=await db
+.from("property_reports")
+.select("*")
+.order("created_at",{ascending:false});
+
+if(error)throw error;
+
+if(!reports||reports.length===0){
+message("adminReportsMessage","No property reports have been submitted yet.");
+return;
+}
+
+const propertyIds=[...new Set(reports.map(r=>r.property_id).filter(Boolean))];
+let properties=[];
+
+if(propertyIds.length){
+const result=await db
+.from("properties")
+.select("id,title,town,region")
+.in("id",propertyIds);
+
+if(result.error)throw result.error;
+properties=result.data||[];
+}
+
+const propertyMap={};
+properties.forEach(p=>propertyMap[p.id]=p);
+
+message("adminReportsMessage",reports.length+" report(s) found.");
+
+reports.forEach(report=>{
+const property=propertyMap[report.property_id]||{};
+const card=document.createElement("div");
+card.className="admin-card";
+
+card.innerHTML=
+'<h3>'+safe(property.title||"Property unavailable")+'</h3>'+
+'<p><strong>Location:</strong> '+safe(property.town||"Unknown")+', '+safe(property.region||"")+'</p>'+
+'<p><strong>Reason:</strong> '+safe(report.reason)+'</p>'+
+'<p><strong>Details:</strong> '+safe(report.details||"No additional details")+'</p>'+
+'<p><strong>Reporter ID:</strong> '+safe(report.reporter_id)+'</p>'+
+'<p><strong>Date:</strong> '+safe(report.created_at?new Date(report.created_at).toLocaleString():"Unavailable")+'</p>'+
+'<p><strong>Current status:</strong> '+safe(report.status)+'</p>'+
+'<label>Update report status</label>'+
+'<select class="report-status">'+
+'<option value="pending">Pending</option>'+
+'<option value="reviewing">Reviewing</option>'+
+'<option value="resolved">Resolved</option>'+
+'<option value="dismissed">Dismissed</option>'+
+'</select>'+
+'<label>Admin note</label>'+
+'<textarea class="report-admin-note" placeholder="Write an internal admin note...">'+safe(report.admin_note||"")+'</textarea>'+
+'<button class="primary save-report-status">Save Report Update</button>'+
+'<div class="status report-update-message hidden"></div>';
+
+const statusSelect=card.querySelector(".report-status");
+statusSelect.value=report.status||"pending";
+
+const saveButton=card.querySelector(".save-report-status");
+const updateMessage=card.querySelector(".report-update-message");
+
+saveButton.addEventListener("click",async()=>{
+const newStatus=statusSelect.value;
+const adminNote=card.querySelector(".report-admin-note").value.trim();
+
+saveButton.disabled=true;
+saveButton.textContent="Saving...";
+updateMessage.classList.remove("hidden");
+updateMessage.textContent="Saving report update...";
+
+try{
+const {data,error}=await db
+.from("property_reports")
+.update({
+status:newStatus,
+admin_note:adminNote
+})
+.eq("id",report.id)
+.select("id");
+
+if(error)throw error;
+
+if(!data||!data.length){
+throw new Error("No report was updated. Check administrator permissions.");
+}
+
+updateMessage.textContent="Report updated successfully.";
+saveButton.textContent="Saved";
+
+}catch(error){
+updateMessage.textContent="Update failed: "+error.message;
+saveButton.disabled=false;
+saveButton.textContent="Save Report Update";
+}
+});
+
+container.appendChild(card);
+});
+
+}catch(error){
+message("adminReportsMessage","Could not load reports: "+error.message);
+}
+}
 async function loadAdminAccounts(){
 if(!isAdmin||!currentUser){message("adminAccountsMessage","Admin access required.");return}
 const container=document.getElementById("adminAccounts");container.innerHTML="";
