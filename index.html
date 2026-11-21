@@ -1185,11 +1185,7 @@ if(!data?.length){alert("No property was updated. Check admin permissions.");ret
 alert("Property "+newStatus+" successfully.");
 await loadAdminProperties();await loadProperties();
 }
-const reportButton=document.createElement("button");
-reportButton.className="danger";
-reportButton.textContent="Report this Property";
-reportButton.onclick=()=>submitPropertyReport(property.id);
-document.getElementById("detailContent").appendChild(reportButton);
+
 async function loadAdminPayments(){
 if(!isAdmin||!currentUser){message("paymentsMessage","Admin access required.");return}
 const container=document.getElementById("adminPayments");container.innerHTML="";
